@@ -4,7 +4,7 @@ import { useChatStore } from '../store/chatStore';
 import ReactMarkdown from 'react-markdown';
 
 const ChatSidebar = ({ unitName, moduleName, unitSlug }) => {
-    const { messages, loading, addMessage, setLoading, initChatIfNeeded } = useChatStore();
+    const { messages, loading, sendMessage, initChatIfNeeded } = useChatStore();
     const [input, setInput] = useState('');
     const [isAlerting, setIsAlerting] = useState(false);
     const messagesEndRef = useRef(null);
@@ -53,78 +53,67 @@ const ChatSidebar = ({ unitName, moduleName, unitSlug }) => {
         setTimeout(() => setIsAlerting(false), 5000);
     };
 
-    const handleSend = async (e) => {
-        e.preventDefault();
-        if (!input.trim() || loading) return;
-
-        const userMessage = { role: 'user', content: input };
-        addMessage(userMessage);
+    const extractOptions = (text) => {
+        if (!text) return [];
+        const lines = text.split('\n');
+        const options = [];
+        const optionRegex = /^([a-d])\)\s*(.*)/i;
         
-        const currentInput = input;
-        setInput('');
-        setLoading(true);
-
-        try {
-            const webhookUrl = import.meta.env.PUBLIC_N8N_CEREBRO_URL;
-            
-            const currentPath = window.location.pathname;
-            
-            // Función de normalización kebab-case por si hay espacios o caracteres raros en la URL
-            const toKebabCase = (str) => {
-                return str
-                    .normalize('NFD') // Quitar tildes
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')
-                    .replace(/[^a-z0-9-/]/g, '-') // Permitimos '/' para mantener la estructura carpeta/archivo
-                    .replace(/-+/g, '-')
-                    .replace(/^-|-$/g, '');
-            };
-
-            // Extraemos todo lo que va después de /leccion/ para que quede carpeta/slug
-            const match = currentPath.match(/^\/leccion\/(.*)/);
-            let raw_slug = match ? match[1] : '';
-            // Si no estamos en /leccion, usa el unitName o dejamos vacio
-            if (!raw_slug && unitName) {
-                raw_slug = unitName.replace(/\.(pdf|PDF|docx|DOCX)$/, '');
+        lines.forEach(line => {
+            const match = line.trim().match(optionRegex);
+            if (match) {
+                options.push({
+                    id: match[1].toLowerCase(),
+                    text: match[2].trim(),
+                    full: line.trim()
+                });
             }
+        });
+        return options;
+    };
 
-            const current_slug = toKebabCase(raw_slug);
-            const current_carpeta = current_slug.split('/')[0] || "";
+    const handleOptionSelect = (option) => {
+        if (loading) return;
+        // Enviamos la respuesta de forma natural
+        const responseText = `Mi respuesta es la ${option.id}: ${option.text}`;
+        handleSend(null, responseText);
+    };
 
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    chatInput: currentInput,
-                    sessionId: 'estudiante-demo',
-                    current_slug: current_slug,
-                    current_carpeta: current_carpeta
-                }),
-            });
+    const handleSend = async (e, forcedInput = null) => {
+        if (e) e.preventDefault();
+        const finalInput = forcedInput || input;
+        
+        if (!finalInput.trim() || loading) return;
 
-            if (!response.ok) throw new Error('Cerebro no responde');
+        if (!forcedInput) setInput('');
 
-            const data = await response.json();
-            
-            // Suponemos que n8n devuelve { output: "..." } o { response: "..." }
-            let aiText = data.output || data.response || data.text || "Lo siento, he tenido un problema procesando tu duda.";
+        // Calculamos el contexto
+        const currentPath = window.location.pathname;
+        const toKebabCase = (str) => {
+            return str
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-/]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+        };
 
-            addMessage({ 
-                role: 'assistant', 
-                content: aiText 
-            });
-        } catch (err) {
-            console.error('AI Agent Error:', err);
-            addMessage({ 
-                role: 'assistant', 
-                content: '⚠️ Lo siento, mi conexión con el servidor central de Alquimia se ha interrumpido. Por favor, inténtalo de nuevo en unos momentos.' 
-            });
-        } finally {
-            setLoading(false);
+        const match = currentPath.match(/^\/leccion\/(.*)/);
+        let raw_slug = match ? match[1] : '';
+        if (!raw_slug && unitName) {
+            raw_slug = unitName.replace(/\.(pdf|PDF|docx|DOCX)$/, '');
         }
+
+        const current_slug = toKebabCase(raw_slug);
+        const current_carpeta = current_slug.split('/')[0] || "";
+
+        // Llamamos a la acción centralizada
+        await sendMessage(finalInput, {
+            current_slug,
+            current_carpeta
+        });
     };
 
     return (
@@ -157,11 +146,44 @@ const ChatSidebar = ({ unitName, moduleName, unitSlug }) => {
                             {msg.role === 'user' ? (
                                 msg.content
                             ) : (
-                                <div className="prose prose-sm max-w-none prose-slate prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:text-slate-100 prose-a:text-medical-green-600 hover:prose-a:text-medical-green-700 prose-strong:text-slate-800 [&_table]:w-full [&_table]:border-collapse [&_th]:border-b-2 [&_th]:border-slate-200 [&_th]:py-2 [&_th]:text-left [&_td]:border-b [&_td]:border-slate-100 [&_td]:py-2 [&_tr:last-child_td]:border-b-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2">
-                                    <ReactMarkdown>
-                                        {msg.content}
-                                    </ReactMarkdown>
-                                </div>
+                                (()=>{
+                                    const options = extractOptions(msg.content);
+                                    const isInteractive = msg.role === 'assistant' && i === messages.length - 1 && !loading && options.length > 0;
+                                    
+                                    // Limpiamos el contenido si hay botones interactivos para no duplicar información
+                                    let displayContent = msg.content;
+                                    if (isInteractive) {
+                                        displayContent = msg.content.split('\n')
+                                            .filter(line => !line.trim().match(/^([a-d])\)\s*(.*)/i))
+                                            .join('\n');
+                                    }
+
+                                    return (
+                                        <>
+                                            <div className="prose prose-sm max-w-none prose-slate prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:text-slate-100 prose-a:text-medical-green-600 hover:prose-a:text-medical-green-700 prose-strong:text-slate-800 [&_table]:w-full [&_table]:border-collapse [&_th]:border-b-2 [&_th]:border-slate-200 [&_th]:py-2 [&_th]:text-left [&_td]:border-b [&_td]:border-slate-100 [&_td]:py-2 [&_tr:last-child_td]:border-b-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2">
+                                                <ReactMarkdown>
+                                                    {displayContent}
+                                                </ReactMarkdown>
+                                            </div>
+                                            
+                                            {/* BOTONES INTERACTIVOS */}
+                                            {isInteractive && (
+                                                <div className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                    {options.map((opt) => (
+                                                        <button
+                                                            key={opt.id}
+                                                            onClick={() => handleOptionSelect(opt)}
+                                                            className="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-medical-green-500 hover:bg-medical-green-50 text-slate-700 hover:text-medical-green-900 transition-all text-xs font-medium shadow-sm group flex gap-3 items-center"
+                                                        >
+                                                            <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 group-hover:bg-medical-green-500 group-hover:text-white transition-colors uppercase">{opt.id}</span>
+                                                            <span className="flex-1 leading-tight">{opt.text}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()
                             )}
                         </div>
                     </div>

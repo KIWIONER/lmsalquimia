@@ -4,6 +4,8 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { supabase } from '../lib/supabase';
+import { useChatStore } from '../store/chatStore';
+import { Brain, CheckCircle, ChevronRight } from 'lucide-react';
 
 /**
  * LESSON CONTENT VIEWER (Student Side)
@@ -14,6 +16,9 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
     const [blocks, setBlocks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [completedCardIds, setCompletedCardIds] = useState(new Set());
+    const [activeTestingCardId, setActiveTestingCardId] = useState(null);
+    const { messages, sendMessage, setTestActive } = useChatStore();
     const cardRefs = useRef({});
 
     useEffect(() => {
@@ -21,6 +26,18 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
             fetchTarjetas();
         }
     }, [docId]);
+
+    // Listener para detectar cuando el test termina vía tag oculto de la IA
+    useEffect(() => {
+        if (activeTestingCardId && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg.role === 'assistant' && lastMsg.content.includes('[[COMPLETADO]]')) {
+                setCompletedCardIds(prev => new Set([...prev, activeTestingCardId]));
+                setActiveTestingCardId(null);
+                setTestActive(false);
+            }
+        }
+    }, [messages, activeTestingCardId]);
 
     const fetchTarjetas = async () => {
         setLoading(true);
@@ -50,6 +67,40 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
             el.classList.add('ring-2', 'ring-medical-green-500', 'ring-offset-4');
             setTimeout(() => el.classList.remove('ring-2', 'ring-medical-green-500', 'ring-offset-4'), 2000);
         }
+    };
+
+    const handleTestClick = async (block) => {
+        // Marcamos como "En Progreso"
+        setActiveTestingCardId(block.id);
+        
+        // Enviamos el mensaje al chat con instrucciones precisas: 5 preguntas, FOCO ESTRICTO e IDIOMA ESPAÑOL
+        const prompt = `Por favor, genérame un mini-test interactivo de exactamente 5 preguntas técnicas sobre el contenido de esta sección titulada "${block.titulo}". 
+
+REGLAS CRÍTICAS DE FOCO E IDIOMA:
+1. HABLA SIEMPRE EN ESPAÑOL. Aunque el texto de la tarjeta esté en otro idioma, tus preguntas y feedback deben ser en castellano.
+2. BÁSTATE ÚNICAMENTE en el texto de abajo. No cites otras unidades, tarjetas o conocimiento general externo.
+3. Envía las preguntas de UNA EN UNA.
+4. Cada pregunta DEBE tener exactamente 4 opciones de respuesta (a, b, c, d).
+5. FORMATO OBLIGATORIO:
+   Pregunta X/5: [Pregunta]
+   a) [Opción]
+   b) [Opción]
+   c) [Opción]
+   d) [Opción]
+6. TRAS MI RESPUESTA: Dame feedback (si acerté o no y por qué) y **acto seguido envía la SIGUIENTE PREGUNTA**.
+7. ¡FINALIZACIÓN!: Justo después del feedback de la pregunta 5, escribe exactamente el tag [[COMPLETADO]] para cerrar el test.
+
+Contenido exclusivo de esta tarjeta:
+${block.contenido}
+
+Recuerda: NO TE SALGAS DE ESTE TEXTO Y RESPONDE SIEMPRE EN ESPAÑOL.`;
+        
+        // Enviamos el mensaje
+        await sendMessage(prompt, {
+            current_slug: unitName,
+            isTestRequest: true,
+            blockContent: block.contenido
+        });
     };
 
     if (loading) return (
@@ -125,21 +176,54 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
                     {/* Content Cards */}
                     {blocks.map((block, index) => {
                         const isIndexCard = block.titulo.toLowerCase().includes('indice') || block.titulo.toLowerCase().includes('índice');
+                        const isCompleted = completedCardIds.has(block.id);
+                        const isTesting = activeTestingCardId === block.id;
                         
                         return (
                             <section 
                                 key={block.id}
                                 ref={el => cardRefs.current[block.id] = el}
-                                className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/40 mb-10 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-medical-green-200/20 group/card"
+                                className={`bg-white rounded-[2.5rem] border mb-10 overflow-hidden transition-all duration-500 shadow-xl group/card ${
+                                    isCompleted 
+                                        ? 'border-medical-green-400 bg-medical-green-50/20 shadow-medical-green-200/40 order-1' 
+                                        : isTesting
+                                            ? 'border-amber-400 bg-amber-50/10 shadow-amber-200/20 ring-2 ring-amber-500 ring-offset-2 animate-pulse-subtle'
+                                            : 'border-slate-200 shadow-slate-200/40 hover:shadow-2xl hover:shadow-medical-green-200/20'
+                                }`}
                             >
                                 {/* Card Header */}
-                                <div className="px-8 md:px-12 py-6 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
-                                    <span className="text-xs font-black text-slate-300 bg-white border border-slate-200 w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 shadow-sm group-hover/card:text-medical-green-400 group-hover/card:border-medical-green-200 transition-colors">
-                                        {index + 1}
-                                    </span>
-                                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                        {block.titulo}
-                                    </h2>
+                                <div className={`px-8 md:px-12 py-6 border-b flex items-center justify-between gap-4 ${isCompleted ? 'bg-medical-green-100/50 border-medical-green-100' : isTesting ? 'bg-amber-100/50 border-amber-200' : 'bg-slate-50/30 border-slate-50'}`}>
+                                    <div className="flex items-center gap-4">
+                                        <span className={`text-xs font-black w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all ${
+                                            isCompleted 
+                                                ? 'bg-medical-green-500 text-white border-medical-green-500' 
+                                                : isTesting
+                                                    ? 'bg-amber-500 text-white border-amber-500 animate-bounce'
+                                                    : 'bg-white text-slate-300 border-slate-200 group-hover/card:text-medical-green-400 group-hover/card:border-medical-green-200'
+                                        }`}>
+                                            {isCompleted ? <CheckCircle size={14} /> : index + 1}
+                                        </span>
+                                        <h2 className={`text-xs font-bold uppercase tracking-widest ${isCompleted ? 'text-medical-green-800' : isTesting ? 'text-amber-800' : 'text-slate-500'}`}>
+                                            {block.titulo}
+                                        </h2>
+                                    </div>
+
+                                    {!isIndexCard && (
+                                        <button 
+                                            onClick={() => handleTestClick(block)}
+                                            disabled={isCompleted || isTesting}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                                                isCompleted
+                                                    ? 'bg-medical-green-200 text-medical-green-600 cursor-default px-6'
+                                                    : isTesting
+                                                        ? 'bg-amber-200 text-amber-700 cursor-default'
+                                                        : 'bg-white border border-slate-200 text-slate-500 hover:border-medical-green-500 hover:text-medical-green-600 hover:bg-medical-green-50 shadow-sm'
+                                            }`}
+                                        >
+                                            <Brain size={14} className={isCompleted || isTesting ? 'hidden' : 'text-medical-green-500'} />
+                                            {isCompleted ? 'Test Completado' : isTesting ? 'Realizando Test...' : 'Hacer Test de Autoevaluación'}
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* Card Body */}
@@ -222,6 +306,14 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+                
+                @keyframes pulse-subtle {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.85; }
+                }
+                .animate-pulse-subtle {
+                    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                }
             ` }} />
         </div>
     );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import RichCardEditor from './RichCardEditor';
 import { toKebabCase, splitIntoBlocks, joinBlocks, isIndexTitle } from '../../lib/content';
@@ -28,28 +29,28 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 // --- SUB-COMPONENTES AUXILIARES (DEFINIDOS FUERA PARA EVITAR RE-RENDER) ---
 
-const SortableDocItem = ({ id, doc, isSelected, onSelect, onRename }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: 10 };
+const DocItem = ({ doc, isSelected, onSelect, onRename, onDelete }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState(doc.nombre);
     
     const handleSave = () => { onRename(doc.id, tempName); setIsEditing(false); };
     
     return (
-        <div ref={setNodeRef} style={style} className="mb-1.5 flex items-center group/doc mr-2">
-            <div {...attributes} {...listeners} className="p-2 cursor-grab active:cursor-grabbing text-slate-300 group-hover/doc:text-slate-500 transition-colors shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 8h16M4 16h16" /></svg>
-            </div>
+        <div className="mb-1.5 flex items-center group/doc mr-2">
             <div className={`flex-1 flex items-center gap-3 py-2.5 px-4 rounded-xl border transition-all ${isSelected ? 'bg-white border-medical-green-500 shadow-md ring-2 ring-medical-green-50' : 'border-transparent text-slate-400 hover:bg-white hover:border-slate-100 hover:shadow-sm'}`}>
                 {isEditing ? (
                     <input autoFocus value={tempName} onChange={e => setTempName(e.target.value)} onBlur={handleSave} onKeyDown={e => e.key === 'Enter' && handleSave()} className="bg-transparent border-none text-slate-900 font-bold text-[11px] uppercase tracking-wider focus:outline-none w-full" />
                 ) : (
-                    <div className="flex-1 flex items-center justify-between gap-2 overflow-hidden" onClick={() => onSelect(doc)}>
-                        <span className="truncate font-black text-[11px] uppercase tracking-wider cursor-pointer whitespace-nowrap">{doc.nombre}</span>
-                        <button onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="opacity-0 group-hover/doc:opacity-100 p-1 hover:text-medical-green-600 transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
+                    <div className="flex-1 flex items-start justify-between gap-2 overflow-hidden">
+                        <span onClick={() => onSelect(doc)} className="font-black text-[11px] uppercase tracking-wider cursor-pointer text-left break-words leading-snug flex-1">{doc.nombre}</span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover/doc:opacity-100 transition-all shrink-0 mt-0.5">
+                            <button onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="p-1 hover:text-medical-green-600 transition-all" title="Renombrar Unidad">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(doc.id); }} className="p-1 hover:text-red-500 transition-all" title="Eliminar Unidad">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -169,10 +170,16 @@ const DocumentEditor = () => {
     const [collapsedCards, setCollapsedCards] = useState(new Set());
     const [showPdf, setShowPdf] = useState(false);
     const [pdfWidth, setPdfWidth] = useState(45);
-    const [isResizing, setIsResizing] = useState(false);
+    const [navWidth, setNavWidth] = useState(400);
+    const [resizingMode, setResizingMode] = useState(null); // 'nav' | 'pdf' | null
+    const [asignaturasOpen, setAsignaturasOpen] = useState(true);
+    const [isUploading, setIsUploading] = useState(false);
+    const [promptModal, setPromptModal] = useState({ isOpen: false, title: '', defaultValue: '', onConfirm: null, onCancel: null });
     const [docOrderMaps, setDocOrderMaps] = useState(() => { if (typeof window !== 'undefined') { const saved = localStorage.getItem('alquimia_docs_order'); return saved ? JSON.parse(saved) : {}; } return {}; });
     
     const activeEditorRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const activeUploadFolderRef = useRef(null);
     const cardsScrollRef = useRef(null);
     const cardRefs = useRef({});
     const autosaveTimers = useRef({});
@@ -189,7 +196,12 @@ const DocumentEditor = () => {
 
     const fetchDocuments = async () => {
         try { 
-            const { data, error } = await supabase.schema('nutricionista').from('documentos').select('id, nombre, carpeta, url').order('nombre'); 
+            // Forzamos orden alfabético/numérico por defecto para que aparezcan UD1, UD2... correctamente
+            const { data, error } = await supabase.schema('nutricionista').from('documentos')
+                .select('id, nombre, carpeta, url, orden')
+                .order('carpeta', { ascending: true })
+                .order('nombre', { ascending: true }); 
+            
             if (error) throw error; 
             setDocuments(data || []);
         } catch (err) { console.error('Error docs:', err); }
@@ -206,18 +218,25 @@ const DocumentEditor = () => {
 
     const groupedDocs = useMemo(() => {
         const groups = {};
-        documents.forEach(doc => { const f = doc.carpeta || 'General'; if (!groups[f]) groups[f] = []; groups[f].push(doc); });
+        documents.forEach(doc => { 
+            const f = doc.carpeta || 'General'; 
+            if (!groups[f]) groups[f] = []; 
+            
+            // Ignorar marcadores de carpeta vacía en la lista de items, pero la carpeta ya ha sido creada
+            if (!doc.nombre?.toLowerCase().includes('.emptyfolderplaceholder')) {
+                groups[f].push(doc); 
+            }
+        });
+        
+        // Ordenamos cada carpeta internamente por nombre con sensibilidad numérica (UD1, UD2, UD10...)
         Object.keys(groups).forEach(folder => {
-            const order = docOrderMaps[folder] || [];
             groups[folder].sort((a, b) => {
-                const idxA = order.indexOf(a.id); const idxB = order.indexOf(b.id);
-                if (idxA === -1 && idxB === -1) return a.nombre.localeCompare(b.nombre, undefined, { numeric: true });
-                if (idxA === -1) return 1; if (idxB === -1) return -1;
-                return idxA - idxB;
+                return a.nombre.localeCompare(b.nombre, undefined, { numeric: true, sensitivity: 'base' });
             });
         });
+        
         return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-    }, [documents, docOrderMaps]);
+    }, [documents]);
 
     const handleSelectDoc = (doc) => { setTarjetas([]); setSelectedCardId(null); setActiveEditorState(null); activeEditorRef.current = null; setSelectedDoc(doc); fetchTarjetas(doc.id); };
     const toggleFolder = (folder) => { setExpandedFolders(prev => { const next = new Set(prev); if (next.has(folder)) next.delete(folder); else next.add(folder); return next; }); };
@@ -228,15 +247,135 @@ const DocumentEditor = () => {
         try { await supabase.schema('nutricionista').from('documentos').update({ nombre: newName }).eq('id', id); setSaveStatus('saved'); setTimeout(() => setSaveStatus('idle'), 2000); } catch { setSaveStatus('idle'); }
     };
 
-    const handleReorderDocs = (folder, event) => {
-        const { active, over } = event; if (!over || active.id === over.id) return;
-        const folderDocs = documents.filter(d => (d.carpeta || 'General') === folder);
-        const oldIndex = folderDocs.findIndex(d => d.id === active.id); const newIndex = folderDocs.findIndex(d => d.id === over.id);
-        const newFolderDocs = arrayMove(folderDocs, oldIndex, newIndex);
-        const newOrder = newFolderDocs.map(d => d.id);
-        const newDocOrderMaps = { ...docOrderMaps, [folder]: newOrder };
-        setDocOrderMaps(newDocOrderMaps);
-        localStorage.setItem('alquimia_docs_order', JSON.stringify(newDocOrderMaps));
+    const handleDeleteDoc = async (id) => {
+        if (!confirm('¿Seguro que deseas eliminar permanentemente esta unidad didáctica y todas sus tarjetas? Esta acción no se puede deshacer.')) return;
+        setSaveStatus('saving');
+        try {
+            await supabase.schema('nutricionista').from('tarjetas').delete().eq('documento_id', id);
+            await supabase.schema('nutricionista').from('documentos').delete().eq('id', id);
+            if (selectedDoc?.id === id) { setSelectedDoc(null); setTarjetas([]); }
+            await fetchDocuments();
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error(error);
+            alert('Error eliminando la unidad didáctica.');
+            setSaveStatus('error');
+        } finally { setTimeout(() => setSaveStatus('idle'), 2000); }
+    };
+
+    const handleDeleteAsignatura = async (folder) => {
+        if (!confirm(`¿Estás TOTALMENTE SEGURO de querer borrar la asignatura completa "${folder}"? Esto borrará todas las unidades y tarjetas que contiene para siempre. Esta acción ES DEFINITIVA.`)) return;
+        setSaveStatus('saving');
+        try {
+            const docsToDelete = documents.filter(d => d.carpeta === folder);
+            for (const doc of docsToDelete) {
+                await supabase.schema('nutricionista').from('tarjetas').delete().eq('documento_id', doc.id);
+            }
+            await supabase.schema('nutricionista').from('documentos').delete().eq('carpeta', folder);
+            
+            if (selectedDoc && selectedDoc.carpeta === folder) { setSelectedDoc(null); setTarjetas([]); }
+            await fetchDocuments();
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error(error);
+            alert('Error eliminando la asignatura.');
+            setSaveStatus('error');
+        } finally { setTimeout(() => setSaveStatus('idle'), 2000); }
+    };
+
+
+    const triggerUpload = (folderName = null) => {
+        activeUploadFolderRef.current = folderName;
+        fileInputRef.current?.click();
+    };
+
+    const openPrompt = (title, defaultValue = '') => {
+        return new Promise((resolve) => {
+            setPromptModal({
+                isOpen: true,
+                title,
+                defaultValue,
+                onConfirm: (val) => { setPromptModal({ isOpen: false }); resolve(val); },
+                onCancel: () => { setPromptModal({ isOpen: false }); resolve(null); }
+            });
+        });
+    };
+
+    const handleCreateAsignatura = async () => {
+        const name = await openPrompt("Nombre de la nueva Asignatura:");
+        if (!name) return;
+        setSaveStatus('saving');
+        try {
+            const folderName = toKebabCase(name.trim());
+            const { error: dbError } = await supabase.schema('nutricionista').from('documentos').insert([{
+                nombre: '.emptyFolderPlaceholder',
+                carpeta: folderName,
+                url: '',
+                orden: 0
+            }]);
+            if (dbError) throw dbError;
+            await fetchDocuments();
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error('Error creando asignatura:', error);
+            setSaveStatus('error');
+        } finally {
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf') {
+            alert('Por favor, selecciona un archivo PDF válido.');
+            return;
+        }
+
+        const preselectedValue = activeUploadFolderRef.current;
+        const asignatura = preselectedValue || await openPrompt("¿A qué Asignatura pertenece este PDF?", "Nueva Asignatura");
+        if (!asignatura) return; // cancelado por el usuario
+
+        setIsUploading(true);
+        setSaveStatus('saving');
+        
+        try {
+            const folderName = toKebabCase(asignatura.trim());
+            const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+            const originalName = `${Date.now()}_${safeName}`;
+            const filePath = `dietetica-nutricion/${folderName}/${originalName}`;
+            
+            // Subir archivo al bucket 'cerebro-nutricionista'
+            const { error: uploadError } = await supabase.storage.from('cerebro-nutricionista').upload(filePath, file);
+            if (uploadError) throw uploadError;
+
+            // Obtener URL Pública
+            const { data: publicUrlData } = supabase.storage.from('cerebro-nutricionista').getPublicUrl(filePath);
+
+            // Registrar en base de datos
+            const { error: dbError } = await supabase.schema('nutricionista').from('documentos').insert([{
+                nombre: file.name.replace(/\.[^/.]+$/, ""), // Nombre sin extensión (.pdf)
+                carpeta: folderName,
+                url: publicUrlData.publicUrl,
+                orden: 99
+            }]);
+            
+            if (dbError) throw dbError;
+
+            // Mostrar el alert con la URL como pidió el usuario
+            window.prompt("¡PDF subido correctamente! Aquí tienes la URL pública que puedes llevar a N8N:", publicUrlData.publicUrl);
+
+            await fetchDocuments();
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error('Error subiendo PDF:', error);
+            alert(`Error al subir el PDF: ${error.message || JSON.stringify(error)}`);
+            setSaveStatus('error');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            setTimeout(() => setSaveStatus('idle'), 3000);
+        }
     };
 
     const updateLocalTarjeta = (id, fields) => {
@@ -347,30 +486,76 @@ const DocumentEditor = () => {
         setToolsMenuOpen(false);
         try {
             // 1. Obtener contenido base del documento (o unir tarjetas actuales si no hay base)
-            const { data: docData } = await supabase.schema('nutricionista').from('documentos').select('contenido').eq('id', selectedDoc.id).single();
+            const { data: docData } = await supabase.schema('nutricionista').from('documentos').select('contenido, url').eq('id', selectedDoc.id).single();
             const rawContent = docData?.contenido || joinBlocks(tarjetas);
 
-            if (!rawContent) throw new Error('No hay contenido para procesar');
+            let payload = {};
 
-            // 2. Llamar a n8n
-            const response = await fetch(import.meta.env.PUBLIC_N8N_CEREBRO_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'structure', content: rawContent, docName: selectedDoc.nombre })
-            });
-
-            if (!response.ok) throw new Error('Error en la comunicación con la IA');
-            const data = await response.json();
-            const structuredMarkdown = typeof data === 'string' ? data : data.text || data.content;
-
-            if (!structuredMarkdown || structuredMarkdown.length < 50) {
-                throw new Error('La IA ha devuelto un resultado vacío o demasiado corto. No se ha modificado el documento por seguridad.');
+            if (!rawContent) {
+                // Si no hay contenido de texto, intentamos enviar el PDF a n8n para que lo extraiga directamente
+                if (selectedDoc.url && selectedDoc.url.toLowerCase().includes('.pdf')) {
+                    payload = {
+                        action: 'extract_and_structure_pdf',
+                        doc_id: selectedDoc.id,
+                        pdf_url: selectedDoc.url,  // n8n body.pdf_url
+                        nombre: selectedDoc.nombre, // n8n body.nombre
+                        carpeta: selectedDoc.carpeta || 'General' // n8n body.carpeta
+                    };
+                } else {
+                    throw new Error('No hay contenido para procesar y el archivo no es un PDF válido.');
+                }
+            } else {
+                payload = { 
+                    action: 'structure', 
+                    content: rawContent, 
+                    docName: selectedDoc.nombre 
+                };
             }
 
-            // 3. Split y guardar
+            // 2. Llamar a n8n
+            const targetUrl = payload.action === 'extract_and_structure_pdf' 
+                ? 'https://cerebro.agencialquimia.com/webhook/cerebro-procesar-pdf'
+                : import.meta.env.PUBLIC_N8N_CEREBRO_URL;
+
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error('Error en la comunicación con la IA (' + response.status + ')');
+            
+            const rawBody = await response.text();
+            let structuredMarkdown = '';
+            let parsedData = null;
+            
+            try {
+                parsedData = JSON.parse(rawBody);
+            } catch (e) {
+                // Not JSON, assume it's raw text
+                parsedData = rawBody;
+            }
+
+            // A) Si el webhook de N8N se encargó de insertar las tarjetas directamente en la BD:
+            if (parsedData && parsedData.ok === true && parsedData.tarjetas !== undefined) {
+                console.log("N8N procesó e insertó las tarjetas automáticamente. Refrescando interfaz...");
+                await fetchTarjetas(selectedDoc.id);
+                setSaveStatus('saved');
+                setIsProcessing(false);
+                return; // Cortocircuito, N8N ya hizo el trabajo sucio.
+            }
+
+            // B) Flujo Clásico: Si N8N devolvió el texto puro en Markdown para que el Frontend lo corte
+            structuredMarkdown = typeof parsedData === 'string' ? parsedData : parsedData.text || parsedData.content || parsedData.markdown || parsedData.response || parsedData.output;
+
+            if (!structuredMarkdown || structuredMarkdown.length < 50) {
+                console.error("N8N RESPONSE:", parsedData);
+                throw new Error('La IA ha devuelto un resultado vacío o nulo. Data recibida: ' + JSON.stringify(parsedData).substring(0, 100));
+            }
+
+            // 3. Split y guardar (Frontend)
             const newBlocks = splitIntoBlocks(structuredMarkdown);
             
-            // Si el documento actual tiene mucho contenido y la IA devuelve un solo bloque, algo va mal
             if (tarjetas.length > 3 && newBlocks.length <= 1) {
                 throw new Error('La IA no ha podido estructurar el contenido en bloques. Se cancela el proceso para no perder las tarjetas actuales.');
             }
@@ -383,7 +568,7 @@ const DocumentEditor = () => {
                 orden: i
             }));
 
-            // Limpiar anteriores e insertar nuevas (SOLO SI LLEGAMOS AQUÍ)
+            // Limpiar anteriores e insertar nuevas en BD Front-side
             const { error: delError } = await supabase.schema('nutricionista').from('tarjetas').delete().eq('documento_id', selectedDoc.id);
             if (delError) throw delError;
 
@@ -484,22 +669,27 @@ const DocumentEditor = () => {
     const handleCollapseAll = () => setCollapsedCards(new Set(tarjetas.map(t => t.id)));
     const handleExpandAll = () => setCollapsedCards(new Set());
     
-    // LOGICA DE RESIZER
-    const handleMouseDown = useCallback((e) => {
-        e.preventDefault();
-        setIsResizing(true);
+    // LOGICA DE RESIZER DUAL
+    const handleStartResizing = useCallback((mode, e) => {
+        if(e) e.preventDefault();
+        setResizingMode(mode);
     }, []);
 
     useEffect(() => {
-        if (!isResizing) return;
+        if (!resizingMode) return;
 
         const handleMouseMove = (e) => {
-            const containerWidth = window.innerWidth;
-            const newWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
-            if (newWidth > 15 && newWidth < 80) setPdfWidth(newWidth);
+            if (resizingMode === 'pdf') {
+                const containerWidth = window.innerWidth;
+                const newWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
+                if (newWidth > 15 && newWidth < 80) setPdfWidth(newWidth);
+            } else if (resizingMode === 'nav') {
+                const newWidth = e.clientX;
+                if (newWidth > 250 && newWidth < 800) setNavWidth(newWidth);
+            }
         };
 
-        const handleMouseUp = () => setIsResizing(false);
+        const handleMouseUp = () => setResizingMode(null);
 
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
@@ -507,7 +697,7 @@ const DocumentEditor = () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isResizing]);
+    }, [resizingMode]);
 
     return (
         <div className="flex flex-col h-full w-full bg-[#fcfcfc] overflow-hidden text-slate-900 font-sans">
@@ -626,40 +816,113 @@ const DocumentEditor = () => {
             </header>
 
             <div className="flex flex-1 overflow-hidden">
-                {/* PANEL 1: NAV */}
-                <div className={`w-[360px] h-full bg-white border-r border-slate-100 flex flex-col shrink-0 transition-all duration-500 z-50 ${sidebarOpen ? '' : '-ml-[360px]'}`}>
-                <div className="p-10 border-b border-slate-50 shrink-0 flex items-center gap-6">
-                    <div className="w-14 h-14 rounded-[2rem] bg-slate-50 border-2 border-slate-100 flex items-center justify-center text-4xl shadow-sm">🏺</div>
-                    <div>
-                        <h2 className="text-[14px] font-black uppercase tracking-[0.4em]">Alquimia</h2>
-                        <p className="text-[10px] font-black text-medical-green-600 uppercase tracking-widest mt-1">Admin Panel</p>
+                {/* PANEL 1: NAV (RESIZABLE) */}
+                <div 
+                    style={{ width: sidebarOpen ? `${navWidth}px` : '0px' }}
+                    className={`h-full bg-white border-r border-slate-100 flex flex-col shrink-0 transition-[width] duration-500 z-50 ${sidebarOpen ? '' : 'overflow-hidden'}`}
+                >
+                <div className="p-10 border-b border-slate-50 shrink-0 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-6">
+                        <div className="w-14 h-14 rounded-[2rem] bg-slate-50 border-2 border-slate-100 flex items-center justify-center text-4xl shadow-sm">🏺</div>
+                        <div>
+                            <h2 className="text-[14px] font-black uppercase tracking-[0.4em]">Alquimia</h2>
+                            <p className="text-[10px] font-black text-medical-green-600 uppercase tracking-widest mt-1">Admin Panel</p>
+                        </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                        {/* BOTÓN CREAR CARPETA */}
+                        <button
+                            onClick={handleCreateAsignatura}
+                            className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all shadow-sm shrink-0"
+                            title="Crear nueva asignatura"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+                        </button>
+                        {/* BOTÓN SUBIR PDF MUNDIAL */}
+                        <button
+                            onClick={() => triggerUpload(null)}
+                            disabled={isUploading}
+                            className="w-10 h-10 rounded-xl bg-medical-green-50 flex items-center justify-center text-medical-green-600 border border-medical-green-100 hover:bg-medical-green-500 hover:text-white transition-all shadow-sm shrink-0"
+                            title="Subir nuevo PDF"
+                        >
+                            {isUploading ? (
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            )}
+                        </button>
+                    </div>
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf" className="hidden" />
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-4">
-                    {groupedDocs.map(([folder, docs]) => (
-                        <div key={folder} className="mb-4">
-                            <button onClick={() => toggleFolder(folder)} className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-2 h-2 rounded-full ${expandedFolders.has(folder) ? 'bg-medical-green-500' : 'bg-slate-200'}`} />
-                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-800">{folder}</span>
+                    {/* ROOT: ASIGNATURAS */}
+                    <div className="mb-4">
+                        <button onClick={() => setAsignaturasOpen(!asignaturasOpen)} className="w-full flex items-center justify-between p-4 rounded-2xl bg-medical-green-50/50 hover:bg-medical-green-50 transition-all border border-medical-green-100 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-medical-green-500 text-white flex items-center justify-center shadow-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                                 </div>
-                                <svg className={`h-4 w-4 transition-transform ${expandedFolders.has(folder) ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="3" /></svg>
-                            </button>
-                            {expandedFolders.has(folder) && (
-                                <div className="pl-4 mt-2 space-y-1">
-                                    <DndContext sensors={sensors} onDragEnd={(e) => handleReorderDocs(folder, e)}>
-                                        <SortableContext items={docs.map(d => d.id)} strategy={verticalListSortingStrategy}>
-                                            {docs.map(doc => <SortableDocItem key={doc.id} id={doc.id} doc={doc} isSelected={selectedDoc?.id === doc.id} onSelect={handleSelectDoc} onRename={renameDoc} />)}
-                                        </SortableContext>
-                                    </DndContext>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                <span className="text-[12px] font-black uppercase tracking-[0.2em] text-medical-green-900">Asignaturas</span>
+                            </div>
+                            <svg className={`h-4 w-4 text-medical-green-600 transition-transform ${asignaturasOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="3" /></svg>
+                        </button>
+                        
+                        {/* LISTA DE ASIGNATURAS (CARPETAS) */}
+                        {asignaturasOpen && (
+                            <div className="pl-6 mt-4 space-y-4 border-l-2 border-medical-green-50 ml-6">
+                                {groupedDocs.map(([folder, docs]) => (
+                                    <div key={folder} className="mb-4 relative">
+                                        <div className="absolute -left-[26px] top-6 w-4 h-0.5 bg-medical-green-100 rounded-r-full"></div>
+                                        <div className="group/folder flex items-center relative">
+                                            <button onClick={() => toggleFolder(folder)} className="flex-1 flex items-start justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`w-2 h-2 shrink-0 border border-slate-200 rounded-full mt-1 ${expandedFolders.has(folder) ? 'bg-medical-green-500 border-medical-green-500' : 'bg-slate-200'}`} />
+                                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-800 text-left break-words leading-snug">{folder}</span>
+                                                </div>
+                                                <svg className={`h-4 w-4 shrink-0 transition-transform ${expandedFolders.has(folder) ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="3" /></svg>
+                                            </button>
+                                            {/* BOTONES CONTEXTUALES */}
+                                            <div className="absolute right-4 flex items-center gap-1 opacity-0 group-hover/folder:opacity-100 transition-all">
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); triggerUpload(folder); }} 
+                                                    className="p-2 rounded-lg bg-white shadow-sm border border-slate-100 text-medical-green-600 hover:bg-medical-green-50 transition-all hover:scale-105"
+                                                    title="Subir PDF aquí"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
+                                                </button>
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteAsignatura(folder); }} 
+                                                    className="p-2 rounded-lg bg-white shadow-sm border border-slate-100 text-red-400 hover:text-red-500 hover:bg-red-50 transition-all hover:scale-105"
+                                                    title="Eliminar Asignatura"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {expandedFolders.has(folder) && (
+                                            <div className="pl-4 mt-2 space-y-1">
+                                                {docs.map(doc => <DocItem key={doc.id} doc={doc} isSelected={selectedDoc?.id === doc.id} onSelect={handleSelectDoc} onRename={renameDoc} onDelete={handleDeleteDoc} />)}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+                </div>
+                
+                {/* RESIZER IZQUIERDO */}
+                {sidebarOpen && (
+                    <div 
+                        onMouseDown={(e) => handleStartResizing('nav', e)}
+                        className={`w-[6px] h-full cursor-col-resize hover:bg-medical-green-400 bg-slate-100 transition-colors z-[60] active:bg-medical-green-600 shrink-0 relative flex items-center justify-center`}
+                    >
+                        <div className="w-[1px] h-10 bg-slate-300 rounded-full"></div>
+                    </div>
+                )}
 
-            {/* PANEL 2: ÍNDICE */}
+                {/* PANEL 2: ÍNDICE */}
             {selectedDoc && (
                 <div className="w-[400px] h-full bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
                     <div className="p-10 border-b border-slate-100 bg-white/50 text-center shrink-0">
@@ -758,6 +1021,10 @@ const DocumentEditor = () => {
                         </div>
                     )}
 
+                    {(resizingMode === 'nav') && (
+                        <div className="absolute inset-0 z-[210] cursor-col-resize" />
+                    )}
+
                     {selectedDoc ? (
                         <div className="max-w-4xl mx-auto space-y-16 pb-96">
                             <DndContext sensors={sensors} modifiers={[restrictToVerticalAxis]} onDragEnd={async (event) => {
@@ -803,10 +1070,10 @@ const DocumentEditor = () => {
                 </div>
             </div>
 
-            {/* EJE VERTICAL (RESIZER) */}
+            {/* EJE VERTICAL (RESIZER DERECHA - PDF) */}
             {showPdf && (
                 <div 
-                    onMouseDown={handleMouseDown}
+                    onMouseDown={(e) => handleStartResizing('pdf', e)}
                     className={`w-[6px] h-full cursor-col-resize hover:bg-medical-green-400 bg-slate-200 transition-colors z-[100] active:bg-medical-green-600 shrink-0 relative flex items-center justify-center`}
                     title="Arrastra para redimensionar"
                 >
@@ -828,7 +1095,7 @@ const DocumentEditor = () => {
                             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Documento Original</span>
                         </div>
                     </div>
-                    <div className={`flex-1 bg-slate-500 overflow-hidden relative ${isResizing ? 'pointer-events-none' : ''}`}>
+                    <div className={`flex-1 bg-slate-500 overflow-hidden relative ${resizingMode ? 'pointer-events-none' : ''}`}>
                         <iframe src={`${selectedDoc.url}#view=FitH`} className="w-full h-full border-none" title="Original PDF" />
                     </div>
                 </div>
@@ -847,8 +1114,42 @@ const DocumentEditor = () => {
                 .card-preview li { font-size: 0.95rem; color: #475569; margin-bottom: 0.4rem; display: list-item !important; }
             ` 
         }} />
-    </div>
-);
+        {/* Modal de Prompt (Sustituto de window.prompt) mediante Portal */}
+        {promptModal.isOpen && typeof document !== 'undefined' && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="p-6 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
+                        <div className="w-10 h-10 rounded-xl bg-medical-green-50 text-medical-green-600 flex items-center justify-center shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-medical-green-600">Alquimia LMS</h3>
+                            <p className="text-sm font-bold text-slate-800 mt-0.5">{promptModal.title}</p>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <input 
+                            autoFocus
+                            id="prompt-modal-input"
+                            type="text"
+                            defaultValue={promptModal.defaultValue}
+                            onKeyDown={(e) => { 
+                                if(e.key === 'Enter') promptModal.onConfirm(e.target.value); 
+                                if(e.key === 'Escape') promptModal.onCancel(); 
+                            }}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 outline-none focus:border-medical-green-500 focus:bg-white transition-all shadow-inner font-medium placeholder:text-slate-400"
+                        />
+                    </div>
+                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                        <button onClick={promptModal.onCancel} className="px-5 py-2.5 rounded-xl text-[10px] font-bold text-slate-500 hover:bg-slate-200 transition-all uppercase tracking-[0.15em]">Cancelar</button>
+                        <button onClick={() => promptModal.onConfirm(document.getElementById('prompt-modal-input').value)} className="px-5 py-2.5 rounded-xl text-[10px] font-black text-white bg-medical-green-600 hover:bg-medical-green-700 shadow-md transition-all uppercase tracking-[0.15em]">Confirmar</button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+        </div>
+    );
 };
 
 export default DocumentEditor;

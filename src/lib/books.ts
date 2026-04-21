@@ -67,7 +67,7 @@ export async function getLibraryStructure(userId: string = 'estudiante-demo'): P
         const carpetaId = carpetaRaw.trim().toLowerCase();
         const nombreLimpio = nombreRaw.trim();
         
-        if (nombreLimpio === '.emptyFolderPlaceholder') return acc;
+        if (nombreLimpio.toLowerCase().includes('.emptyfolderplaceholder')) return acc;
 
         const slug = slugify(nombreLimpio);
 
@@ -90,6 +90,7 @@ export async function getLibraryStructure(userId: string = 'estudiante-demo'): P
 
     return Object.values(agrupados).map(mod => ({
         ...mod,
+        units: mod.units.sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { numeric: true, sensitivity: 'base' })),
         firstUnit: mod.units[0]
     }));
 }
