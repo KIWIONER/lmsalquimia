@@ -994,7 +994,7 @@ const DocumentEditor = () => {
                     <button onClick={() => setSidebarOpen(!sidebarOpen)} className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
                         <svg className={`h-5 w-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M11 19l-7-7 7-7" /></svg>
                     </button>
-                    {selectedDoc && (
+                    {selectedDoc ? (
                         <div className="flex-1 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <span className="text-[10px] font-black uppercase text-slate-300 tracking-[0.3em]">Editando</span>
@@ -1006,6 +1006,8 @@ const DocumentEditor = () => {
                              <span className="text-[10px] font-black uppercase text-slate-300 tracking-[1em] opacity-50">Selecciona una unidad</span>
                         </div>
                     )}
+                </div>
+
                 {/* CONTENEDOR PRINCIPAL DEL EDITOR (BARRA LATERAL IZQ + SCROLL CENTRAL) */}
                 <div className="flex-1 relative flex flex-col overflow-hidden">
                     {/* BOTONES FLOTANTES (POST-IT) - FIJOS AL DIVISOR IZQUIERDO */}
