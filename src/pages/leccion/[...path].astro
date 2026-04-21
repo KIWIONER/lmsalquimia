@@ -5,8 +5,6 @@ import LessonContentViewer from '../../components/LessonContentViewer';
 import { getLibraryStructure } from '../../lib/books';
 import { supabase } from '../../lib/supabase';
 
-export const prerender = false;
-
 export const getStaticPaths = async () => {
     const modules = await getLibraryStructure();
     const paths = [];
