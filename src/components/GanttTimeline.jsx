@@ -1,7 +1,10 @@
 import React from 'react';
 import { LayoutGrid, Layers, Clock, TrendingUp, CheckCircle2, ChevronRight, Brain } from 'lucide-react';
 
+import { useChatStore } from '../store/chatStore';
+
 const GanttTimeline = () => {
+  const { openChat } = useChatStore();
   const units = [
     { 
         id: 'UD01', 
@@ -62,9 +65,12 @@ const GanttTimeline = () => {
                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">Progreso Total</span>
                 <span className="text-sm font-black text-medical-green-600">42%</span>
             </div>
-            <button className="flex items-center gap-2 px-6 py-3 bg-medical-green-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-medical-green-700 transition-all shadow-xl shadow-medical-green-600/20 active:scale-95">
+            <button 
+                onClick={openChat}
+                className="flex items-center gap-2 px-6 py-3 bg-medical-green-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-medical-green-700 transition-all shadow-xl shadow-medical-green-600/20 active:scale-95"
+            >
                 <Brain size={14} />
-                Regenerar Plan con IA
+                Estudia con IA
             </button>
         </div>
       </div>

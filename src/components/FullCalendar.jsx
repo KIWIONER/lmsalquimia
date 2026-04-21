@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, Brain } from 'lucide-react';
 
+import { useChatStore } from '../store/chatStore';
+
 const FullCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const { openChat } = useChatStore();
 
   const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -113,9 +116,12 @@ const FullCalendar = () => {
           </button>
         </div>
 
-        <button className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10 active:scale-95">
+        <button 
+          onClick={openChat}
+          className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+        >
           <Brain size={14} />
-          Optimizar con IA
+          Estudia con IA
         </button>
       </div>
 
