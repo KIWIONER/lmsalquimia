@@ -32,11 +32,6 @@ const progressPercentage = activeModuleUnits.length > 0
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto p-3 space-y-1" id="sidebar-nav">
-        <!-- Botón Universal Estudia con IA -->
-        <div class="mb-4">
-            <AIStudyButton client:load />
-        </div>
-
         <!-- Botón Especial Calendario Admin (Solo visible en rutas /admin) -->
         {currentPath.includes('/admin') && (
             <a 
