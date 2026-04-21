@@ -932,6 +932,24 @@ const DocumentEditor = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Botón Especial Calendario Admin */}
+                    <a 
+                        href="/admin/calendario" 
+                        className="w-full flex items-center justify-between p-4 mt-2 rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all group border border-slate-700"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-medical-green-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-medical-green-500/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Calendario <span class="text-medical-green-400 italic">Admin</span></span>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transform group-hover:translate-x-1 transition-transform text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
                 </div>
                 </div>
                 
