@@ -559,7 +559,17 @@ const DocumentEditor = () => {
             }
 
             // B) Flujo Clásico: Si N8N devolvió el texto puro en Markdown para que el Frontend lo corte
-            structuredMarkdown = typeof parsedData === 'string' ? parsedData : parsedData.text || parsedData.content || parsedData.markdown || parsedData.response || parsedData.output;
+            structuredMarkdown = typeof parsedData === 'string' ? parsedData : (
+                parsedData.texto_final || 
+                parsedData.text || 
+                parsedData.content || 
+                parsedData.markdown || 
+                parsedData.response || 
+                parsedData.output || 
+                parsedData.result ||
+                // Fallback: Si es un objeto, buscar la primera propiedad que sea un string largo
+                Object.values(parsedData).find(v => typeof v === 'string' && v.length > 50)
+            );
 
             if (!structuredMarkdown || structuredMarkdown.length < 50) {
                 console.error("N8N RESPONSE:", parsedData);
