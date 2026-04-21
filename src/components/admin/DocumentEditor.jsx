@@ -987,24 +987,45 @@ const DocumentEditor = () => {
                                 <span className="text-[10px] font-black uppercase text-slate-300 tracking-[0.3em]">Editando</span>
                                 <span className="text-[11px] font-black uppercase text-slate-800 truncate max-w-md">{selectedDoc.nombre}</span>
                             </div>
-                            
-                            <div className="flex items-center gap-2">
-                                {selectedDoc.url && (
-                                    <button onClick={() => setShowPdf(!showPdf)} className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${showPdf ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'text-medical-green-600 bg-medical-green-50 hover:bg-medical-green-100 border-medical-green-200'}`}>
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /><path d="M9 13h6m-6 4h6m-6-8h1" /></svg>
-                                        Visor PDF
-                                    </button>
-                                )}
-                                <div className="w-px h-4 bg-slate-100 mx-2"></div>
-                                <button onClick={handleCollapseAll} className="flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all border border-transparent hover:border-slate-100">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 11l7 7 7-7" /></svg>
-                                    Colapsar Todo
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center">
+                             <span className="text-[10px] font-black uppercase text-slate-300 tracking-[1em] opacity-50">Selecciona una unidad</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* SCROLL DE TARJETAS */}
+                <div className="flex-1 overflow-y-auto p-12 custom-scrollbar relative">
+                    {/* BOTONES FLOTANTES (POST-IT) JUNTO AL DIVISOR */}
+                    {selectedDoc && (
+                        <div className="absolute left-0 top-12 z-[220] flex flex-col gap-0.5">
+                            {selectedDoc.url && (
+                                <button 
+                                    onClick={() => setShowPdf(!showPdf)} 
+                                    className={`flex flex-col items-center justify-center gap-1.5 w-12 py-5 rounded-r-2xl border border-l-0 shadow-lg transition-all active:scale-95 group ${showPdf ? 'bg-slate-900 border-slate-900 text-white' : 'bg-medical-green-500 border-medical-green-500 text-white hover:w-14 hover:pr-2'}`}
+                                    title="Visor PDF"
+                                >
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /><path d="M9 13h6m-6 4h6m-6-8h1" /></svg>
+                                    <span className="text-[7px] font-black uppercase tracking-tight">Visor</span>
                                 </button>
-                                <button onClick={handleExpandAll} className="flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all border border-transparent hover:border-slate-100">
-                                    <svg className="h-4 w-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 11l7 7 7-7" /></svg>
-                                    Expandir Todo
-                                </button>
-                            </div>
+                            )}
+                            <button 
+                                onClick={handleCollapseAll} 
+                                className="flex flex-col items-center justify-center gap-1.5 w-12 py-5 rounded-r-2xl bg-white border border-l-0 border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:w-14 hover:pr-2 shadow-md transition-all active:scale-95"
+                                title="Colapsar Todo"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 11l7 7 7-7" /></svg>
+                                <span className="text-[7px] font-black uppercase tracking-tight">Cerrar</span>
+                            </button>
+                            <button 
+                                onClick={handleExpandAll} 
+                                className="flex flex-col items-center justify-center gap-1.5 w-12 py-5 rounded-r-2xl bg-white border border-l-0 border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:w-14 hover:pr-2 shadow-md transition-all active:scale-95"
+                                title="Expandir Todo"
+                            >
+                                <svg className="h-5 w-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 11l7 7 7-7" /></svg>
+                                <span className="text-[7px] font-black uppercase tracking-tight">Abrir</span>
+                            </button>
                         </div>
                     )}
                 </div>
