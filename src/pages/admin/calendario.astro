@@ -1,0 +1,27 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import FullCalendar from '../../components/FullCalendar.jsx';
+---
+
+<Layout title="Gestión de Calendario | Admin Alquimia" showSidebars={true}>
+    <div class="p-8">
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-black text-slate-800 uppercase tracking-tighter">Panel de Control: <span class="text-medical-green-500">Calendario</span></h1>
+                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1">Gestión de fechas críticas y eventos para alumnos</p>
+            </div>
+            <div class="flex gap-4">
+                <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                    Exportar ICS
+                </button>
+                <button class="px-6 py-3 bg-medical-green-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-medical-green-700 transition-all shadow-xl shadow-medical-green-600/20">
+                    Añadir Evento +
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden">
+            <FullCalendar client:load />
+        </div>
+    </div>
+</Layout>
