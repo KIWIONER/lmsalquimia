@@ -2,24 +2,36 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 
 const LoginForm = ({ onLogin }) => {
+    const [mode, setMode] = useState('login'); // 'login' | 'register'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [message, setMessage] = useState(null);
 
-    const handleLogin = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setMessage(null);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (error) throw error;
-            if (onLogin) onLogin(data.session);
+            if (mode === 'login') {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                if (onLogin) onLogin(data.session);
+            } else {
+                const { data, error } = await supabase.auth.signUp({ 
+                    email, 
+                    password,
+                    options: {
+                        emailRedirectTo: window.location.origin + '/admin'
+                    }
+                });
+                if (error) throw error;
+                setMessage('revisa tu email para confirmar la cuenta');
+                setMode('login');
+            }
         } catch (err) {
             setError(err.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : err.message);
         } finally {
@@ -34,11 +46,13 @@ const LoginForm = ({ onLogin }) => {
                     <div className="w-20 h-20 rounded-[2rem] bg-white shadow-xl flex items-center justify-center text-5xl mx-auto mb-6 border border-slate-100 italic transition-transform hover:rotate-12 duration-500">
                         🏺
                     </div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Acceso Admin</h2>
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">
+                        {mode === 'login' ? 'Acceso Admin' : 'Crear Cuenta'}
+                    </h2>
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Alquimia <span className="text-medical-green-600">LMS</span></p>
                 </div>
                 
-                <form onSubmit={handleLogin} className="p-10 space-y-6">
+                <form onSubmit={handleSubmit} className="p-10 space-y-6">
                     <div>
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email de Administrador</label>
                         <input 
@@ -71,6 +85,15 @@ const LoginForm = ({ onLogin }) => {
                         </div>
                     )}
 
+                    {message && (
+                        <div className="p-4 bg-medical-green-50 border border-medical-green-100 rounded-2xl flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-medical-green-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-medical-green-500/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                            <p className="text-[10px] font-black text-medical-green-600 uppercase tracking-tight">{message}</p>
+                        </div>
+                    )}
+
                     <button 
                         type="submit" 
                         disabled={loading}
@@ -80,10 +103,18 @@ const LoginForm = ({ onLogin }) => {
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                         ) : (
                             <>
-                                <span>Entrar al Sanctum</span>
+                                <span>{mode === 'login' ? 'Entrar al Sanctum' : 'Registrar Admin'}</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                             </>
                         )}
+                    </button>
+
+                    <button 
+                        type="button"
+                        onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                        className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-medical-green-600 transition-colors py-2"
+                    >
+                        {mode === 'login' ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
                     </button>
                 </form>
                 
