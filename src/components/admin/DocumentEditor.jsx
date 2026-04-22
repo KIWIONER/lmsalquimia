@@ -116,8 +116,24 @@ const SortableCard = React.forwardRef(({ t, index, selectedCardId, setSelectedCa
             <div ref={ref} className="absolute -top-32" id={`card-${t.id}`} />
             
             <div className={`bg-white rounded-[3rem] border-2 transition-all p-12 ${selectedCardId === t.id ? 'border-medical-green-500 shadow-2xl scale-[1.02]' : 'border-slate-50 shadow-sm opacity-90'}`} onClick={() => setSelectedCardId(t.id)}>
-                <div className="flex items-start gap-6 mb-8 pb-8 border-b border-slate-50">
-                    <div {...attributes} {...listeners} className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black cursor-grab active:cursor-grabbing hover:bg-medical-green-600 transition-colors shrink-0 mt-1">{index + 1}</div>
+                <div className="mb-8 pb-8 border-b border-slate-50">
+                    <div className="flex items-center justify-between mb-6">
+                        <div {...attributes} {...listeners} className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black cursor-grab active:cursor-grabbing hover:bg-medical-green-600 transition-colors shrink-0">{index + 1}</div>
+                        
+                        <div className="flex items-center gap-3">
+                            <button onClick={(e) => { e.stopPropagation(); onSplitIA(t.id); }} className="p-2 rounded-xl border border-slate-100 bg-slate-50 text-medical-green-600 hover:bg-medical-green-500 hover:text-white transition-all shadow-sm" title="Perfeccionar con IA">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); toggleCollapse(t.id); }} className={`p-2 rounded-xl border transition-all ${isCollapsed ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'}`}>
+                                <svg className={`h-5 w-5 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <button onClick={() => setPreviewModes(p => ({ ...p, [t.id]: !p[t.id] }))} className="text-[10px] font-black bg-slate-50 px-6 py-2 rounded-xl border border-slate-100 hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest">{previewModes[t.id] ? 'Editor' : 'Preview'}</button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteTarjeta(t.id); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+
                     <textarea 
                         value={t.titulo || ''} 
                         onChange={e => {
@@ -126,26 +142,13 @@ const SortableCard = React.forwardRef(({ t, index, selectedCardId, setSelectedCa
                             e.target.style.height = e.target.scrollHeight + 'px';
                         }} 
                         rows={1}
-                        className="flex-1 bg-transparent border-none focus:outline-none font-bold text-xl text-slate-800 leading-tight py-1 resize-none overflow-hidden" 
+                        className="w-full bg-transparent border-none focus:outline-none font-bold text-2xl text-slate-800 leading-tight py-2 resize-none overflow-hidden" 
                         placeholder="Título del tema..."
                         onFocus={e => {
                             e.target.style.height = 'auto';
                             e.target.style.height = e.target.scrollHeight + 'px';
                         }}
                     />
-                    
-                    <div className="flex items-center gap-3 mt-1">
-                        <button onClick={(e) => { e.stopPropagation(); onSplitIA(t.id); }} className="p-2 rounded-xl border border-slate-100 bg-slate-50 text-medical-green-600 hover:bg-medical-green-500 hover:text-white transition-all shadow-sm" title="Perfeccionar con IA">
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); toggleCollapse(t.id); }} className={`p-2 rounded-xl border transition-all ${isCollapsed ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'}`}>
-                            <svg className={`h-5 w-5 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <button onClick={() => setPreviewModes(p => ({ ...p, [t.id]: !p[t.id] }))} className="text-[10px] font-black bg-slate-50 px-6 py-2 rounded-xl border border-slate-100 hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest">{previewModes[t.id] ? 'Editor' : 'Preview'}</button>
-                        <button onClick={(e) => { e.stopPropagation(); deleteTarjeta(t.id); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </div>
                 </div>
 
                 {!isCollapsed && (
