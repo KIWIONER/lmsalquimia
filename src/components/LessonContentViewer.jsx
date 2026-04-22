@@ -27,22 +27,30 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
         if (!highlights || highlights.length === 0) return content;
         
         let processed = content;
-        highlights.forEach(phrase => {
-            if (!phrase || phrase.length < 5) return;
+        // Invertimos el orden para resaltar primero las frases más largas y evitar solapamientos incorrectos
+        const sortedHighlights = [...highlights].sort((a, b) => b.length - a.length);
+
+        sortedHighlights.forEach(phrase => {
+            if (!phrase || phrase.length < 8) return; // Ignorar frases demasiado cortas
             
-            // Creamos un patrón que permite asteriscos o guiones bajos opcionales entre y dentro de las palabras
-            // Esto es crucial porque el texto original puede tener markdown (**negrita**) que la IA no envía literal
-            const words = phrase.split(/\s+/);
+            // Limpiamos la frase de caracteres que puedan romper regex o markdown
+            const cleanPhrase = phrase.replace(/[.?¿!¡(),]/g, '');
+            const words = cleanPhrase.split(/\s+/).filter(w => w.length > 1);
+            
+            if (words.length === 0) return;
+
+            // Creamos un patrón flexible que ignora símbolos de markdown (* _) y espacios/puntuación entre palabras
             const regexStr = words.map(word => {
                 const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 return `[\\*_]*${escaped}[\\*_]*`;
-            }).join('\\s+');
+            }).join('[^a-zA-Z0-9]*\\s+[^a-zA-Z0-9]*');
 
             try {
                 const regex = new RegExp(`(${regexStr})`, 'gi');
-                processed = processed.replace(regex, '<mark class="bg-yellow-200/70 text-slate-900 px-0.5 rounded-sm font-semibold transition-colors duration-1000">$1</mark>');
+                // Usamos un estilo inline directo y una clase de Tailwind para asegurar visibilidad
+                processed = processed.replace(regex, '<mark class="bg-yellow-200/80 text-orange-950 font-bold px-1 rounded-sm shadow-sm border-b border-yellow-400" style="background-color: #fef08a; color: #431407;">$1</mark>');
             } catch (e) {
-                console.error("Regex highlight error:", e);
+                console.error("Highlight Error:", e);
             }
         });
         return processed;
