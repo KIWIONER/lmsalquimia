@@ -29,10 +29,13 @@ export const useChatStore = create((set, get) => ({
 
     // Acción centralizada para enviar mensajes a n8n (Gemini)
     sendMessage: async (text, context = {}) => {
-        const { addMessage, setLoading, isTestActive, setTestActive, activeTestContent, setActiveTestContent, setHighlights } = get();
+        const { addMessage, setLoading, isTestActive, setTestActive, activeTestContent, setActiveTestContent, setHighlights, openChat } = get();
         
         // Limpiamos resaltados previos al iniciar nueva consulta
         setHighlights([]);
+        
+        // Aseguramos que el chat esté abierto si mandamos algo
+        openChat();
 
         // Si el contexto indica que iniciamos un test, lo activamos y guardamos el contenido
         if (context.isTestRequest) {
@@ -42,8 +45,14 @@ export const useChatStore = create((set, get) => ({
             }
         }
 
-        // 1. Añadimos el mensaje del usuario al estado (tal cual lo escribió)
-        addMessage({ role: 'user', content: text });
+        // 1. Añadimos el mensaje del usuario al estado
+        if (context.isHidden) {
+            // Si es oculto (como el prompt del test), mandamos un aviso visual amigable
+            addMessage({ role: 'system_info', content: 'Generando test de autoevaluación...' });
+        } else {
+            addMessage({ role: 'user', content: text });
+        }
+        
         setLoading(true);
 
         // 2. Preparamos el input para la IA (VERACIDAD EXTREMA Y REFERENCIAS)

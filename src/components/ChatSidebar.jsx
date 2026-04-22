@@ -136,13 +136,25 @@ const ChatSidebar = ({ unitName, moduleName, unitSlug }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[90%] rounded-2xl p-4 text-sm shadow-sm transition-all overflow-x-auto ${
-                            msg.role === 'user' 
-                                ? 'bg-medical-green-500 text-white rounded-tr-none' 
-                                : `rounded-tl-none border ${msg.isProactive ? 'bg-medical-green-50 border-medical-green-200 text-medical-green-900 font-medium' : 'bg-slate-50 text-slate-700 border-slate-200'}`
-                        }`}>
+                {messages.map((msg, i) => {
+                    if (msg.role === 'system_info') {
+                        return (
+                            <div key={i} className="flex justify-center p-4 animate-in fade-in zoom-in duration-500">
+                                <div className="bg-medical-green-50 border border-medical-green-200/50 rounded-2xl px-6 py-4 flex flex-col items-center gap-3 shadow-sm max-w-[80%]">
+                                    <div className="w-8 h-8 border-3 border-medical-green-500 border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-medical-green-700 text-center">{msg.content}</span>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[90%] rounded-2xl p-4 text-sm shadow-sm transition-all overflow-x-auto ${
+                                msg.role === 'user' 
+                                    ? 'bg-medical-green-500 text-white rounded-tr-none' 
+                                    : `rounded-tl-none border ${msg.isProactive ? 'bg-medical-green-50 border-medical-green-200 text-medical-green-900 font-medium' : 'bg-slate-50 text-slate-700 border-slate-200'}`
+                            }`}>
                             {msg.role === 'user' ? (
                                 msg.content
                             ) : (

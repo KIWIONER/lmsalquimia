@@ -122,10 +122,11 @@ ${block.contenido}
 
 Recuerda: NO TE SALGAS DE ESTE TEXTO Y RESPONDE SIEMPRE EN ESPAÑOL.`;
         
-        // Enviamos el mensaje
+        // Enviamos el mensaje en modo oculto para no asustar al alumno con el prompt técnico
         await sendMessage(prompt, {
             current_slug: unitName,
             isTestRequest: true,
+            isHidden: true,
             blockContent: block.contenido
         });
     };
