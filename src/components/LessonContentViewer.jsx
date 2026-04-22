@@ -114,10 +114,14 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
         Contenido de la tarjeta:
         ${block.contenido}`;
 
+        // Limpiamos cualquier estado de test previo para que la IA no se confunda
+        setTestActive(false);
+
         // Enviamos en modo oculto (isHidden) para que el alumno vea solo el aviso y luego la respuesta
         await sendMessage(prompt, {
             current_slug: unitName,
             isHidden: true,
+            isTestRequest: false,
             blockContent: block.contenido
         });
     };
