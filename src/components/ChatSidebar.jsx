@@ -155,51 +155,52 @@ const ChatSidebar = ({ unitName, moduleName, unitSlug }) => {
                                     ? 'bg-medical-green-500 text-white rounded-tr-none' 
                                     : `rounded-tl-none border ${msg.isProactive ? 'bg-medical-green-50 border-medical-green-200 text-medical-green-900 font-medium' : 'bg-slate-50 text-slate-700 border-slate-200'}`
                             }`}>
-                            {msg.role === 'user' ? (
-                                msg.content
-                            ) : (
-                                (()=>{
-                                    const options = extractOptions(msg.content);
-                                    const isInteractive = msg.role === 'assistant' && i === messages.length - 1 && !loading && options.length > 0;
-                                    
-                                    // Limpiamos el contenido si hay botones interactivos para no duplicar información
-                                    let displayContent = msg.content;
-                                    if (isInteractive) {
-                                        displayContent = msg.content.split('\n')
-                                            .filter(line => !line.trim().match(/^([a-d])\)\s*(.*)/i))
-                                            .join('\n');
-                                    }
+                                {msg.role === 'user' ? (
+                                    msg.content
+                                ) : (
+                                    (()=>{
+                                        const options = extractOptions(msg.content);
+                                        const isInteractive = msg.role === 'assistant' && i === messages.length - 1 && !loading && options.length > 0;
+                                        
+                                        // Limpiamos el contenido si hay botones interactivos para no duplicar información
+                                        let displayContent = msg.content;
+                                        if (isInteractive) {
+                                            displayContent = msg.content.split('\n')
+                                                .filter(line => !line.trim().match(/^([a-d])\)\s*(.*)/i))
+                                                .join('\n');
+                                        }
 
-                                    return (
-                                        <>
-                                            <div className="prose prose-sm max-w-none prose-slate prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:text-slate-100 prose-a:text-medical-green-600 hover:prose-a:text-medical-green-700 prose-strong:text-slate-800 [&_table]:w-full [&_table]:border-collapse [&_th]:border-b-2 [&_th]:border-slate-200 [&_th]:py-2 [&_th]:text-left [&_td]:border-b [&_td]:border-slate-100 [&_td]:py-2 [&_tr:last-child_td]:border-b-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2">
-                                                <ReactMarkdown>
-                                                    {displayContent}
-                                                </ReactMarkdown>
-                                            </div>
-                                            
-                                            {/* BOTONES INTERACTIVOS */}
-                                            {isInteractive && (
-                                                <div className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                                    {options.map((opt) => (
-                                                        <button
-                                                            key={opt.id}
-                                                            onClick={() => handleOptionSelect(opt)}
-                                                            className="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-medical-green-500 hover:bg-medical-green-50 text-slate-700 hover:text-medical-green-900 transition-all text-xs font-medium shadow-sm group flex gap-3 items-center"
-                                                        >
-                                                            <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 group-hover:bg-medical-green-500 group-hover:text-white transition-colors uppercase">{opt.id}</span>
-                                                            <span className="flex-1 leading-tight">{opt.text}</span>
-                                                        </button>
-                                                    ))}
+                                        return (
+                                            <>
+                                                <div className="prose prose-sm max-w-none prose-slate prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:text-slate-100 prose-a:text-medical-green-600 hover:prose-a:text-medical-green-700 prose-strong:text-slate-800 [&_table]:w-full [&_table]:border-collapse [&_th]:border-b-2 [&_th]:border-slate-200 [&_th]:py-2 [&_th]:text-left [&_td]:border-b [&_td]:border-slate-100 [&_td]:py-2 [&_tr:last-child_td]:border-b-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2">
+                                                    <ReactMarkdown>
+                                                        {displayContent}
+                                                    </ReactMarkdown>
                                                 </div>
-                                            )}
-                                        </>
-                                    );
-                                })()
-                            )}
+                                                
+                                                {/* BOTONES INTERACTIVOS */}
+                                                {isInteractive && (
+                                                    <div className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                        {options.map((opt) => (
+                                                            <button
+                                                                key={opt.id}
+                                                                onClick={() => handleOptionSelect(opt)}
+                                                                className="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-medical-green-500 hover:bg-medical-green-50 text-slate-700 hover:text-medical-green-900 transition-all text-xs font-medium shadow-sm group flex gap-3 items-center"
+                                                            >
+                                                                <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 group-hover:bg-medical-green-500 group-hover:text-white transition-colors uppercase">{opt.id}</span>
+                                                                <span className="flex-1 leading-tight">{opt.text}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
                 {loading && (
                     <div className="flex justify-start animate-in fade-in">
                         <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 rounded-tl-none flex gap-1">
