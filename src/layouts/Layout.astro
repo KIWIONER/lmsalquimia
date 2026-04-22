@@ -9,9 +9,10 @@ import SidebarCollapseButton from '../components/SidebarCollapseButton.jsx';
 interface Props {
 	title: string;
 	showSidebars?: boolean;
+    disableCollapse?: boolean;
 }
 
-const { title, showSidebars = true } = Astro.props;
+const { title, showSidebars = true, disableCollapse = false } = Astro.props;
 const pathname = new URL(Astro.request.url).pathname;
 
 const navLinks = [
@@ -86,7 +87,7 @@ const navLinks = [
                     class="w-[360px] shrink-0 z-40 shadow-xl shadow-slate-200/50 bg-white flex flex-col relative transition-all duration-500 ease-in-out overflow-visible" 
                     transition:name="sidebar-left"
                 >
-                    <SidebarCollapseButton client:load />
+                    {!disableCollapse && <SidebarCollapseButton client:load />}
 					<SidebarHierarchy />
                     <slot name="sidebar-left" />
 				</aside>
