@@ -689,8 +689,13 @@ const DocumentEditor = () => {
         });
     };
 
-    const handleCollapseAll = () => setCollapsedCards(new Set(tarjetas.map(t => t.id)));
-    const handleExpandAll = () => setCollapsedCards(new Set());
+    const handleToggleCollapseAll = () => {
+        if (collapsedCards.size === tarjetas.length) {
+            setCollapsedCards(new Set());
+        } else {
+            setCollapsedCards(new Set(tarjetas.map(t => t.id)));
+        }
+    };
     
     // LOGICA DE RESIZER DUAL
     const handleStartResizing = useCallback((mode, e) => {
@@ -1052,20 +1057,16 @@ const DocumentEditor = () => {
                                 </button>
                             )}
                             <button 
-                                onClick={handleCollapseAll} 
+                                onClick={handleToggleCollapseAll} 
                                 className="pointer-events-auto flex flex-col items-center justify-center gap-1.5 w-12 py-5 rounded-l-2xl bg-white border border-r-0 border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:w-14 hover:pl-2 shadow-md transition-all active:scale-95"
-                                title="Colapsar Todo"
+                                title={collapsedCards.size === tarjetas.length ? "Expandir Todo" : "Colapsar Todo"}
                             >
-                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 11l7 7 7-7" /></svg>
-                                <span className="text-[7px] font-black uppercase tracking-tight">Cerrar</span>
-                            </button>
-                            <button 
-                                onClick={handleExpandAll} 
-                                className="pointer-events-auto flex flex-col items-center justify-center gap-1.5 w-12 py-5 rounded-l-2xl bg-white border border-r-0 border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:w-14 hover:pl-2 shadow-md transition-all active:scale-95"
-                                title="Expandir Todo"
-                            >
-                                <svg className="h-5 w-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 11l7 7 7-7" /></svg>
-                                <span className="text-[7px] font-black uppercase tracking-tight">Abrir</span>
+                                <svg className={`h-5 w-5 transition-transform duration-300 ${collapsedCards.size === tarjetas.length ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                    <path d="M5 11l7 7 7-7" />
+                                </svg>
+                                <span className="text-[7px] font-black uppercase tracking-tight">
+                                    {collapsedCards.size === tarjetas.length ? 'Abrir' : 'Cerrar'}
+                                </span>
                             </button>
                         </div>
                     )}
