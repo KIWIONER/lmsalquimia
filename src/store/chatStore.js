@@ -63,12 +63,11 @@ export const useChatStore = create((set, get) => ({
 [REGLAS DE ORO DEL CEREBRO ALQUIMIA]:
 1. VERACIDAD ABSOLUTA: No inventes datos. Cíñete ÚNICAMENTE al contenido de las tarjetas. Si algo no está, di "No consta en el temario".
 2. IDIOMA: Responde SIEMPRE en ESPAÑOL.
-3. FORMATO: Usa EXCLUSIVAMENTE Markdown. ¡PROHIBIDO usar etiquetas HTML como <ins>, <u>, <b> o <br>! Usa **negrita** o *cursiva* de markdown.
-4. TRAZABILIDAD TOTAL (SUBRAYADO): Es CRÍTICO que el alumno vea subrayado TODO lo que has usado para responder.
-   - Identifica TODAS las frases literales (largas y exactas) de las tarjetas en las que te has basado. 
-   - No te limites a 2 frases; si has usado 5 puntos clave, identifica las 5 frases originales.
-   - AL FINAL de tu respuesta, añade los fragmentos con este formato: [[REFS: frase literal 1 | frase literal 2 | frase literal 3 | ...]]
-   - RECUERDA: La frase debe ser EXACTA a como aparece en el texto original para que el sistema pueda encontrarla y subrayarla en amarillo.
+3. FORMATO: Usa EXCLUSIVAMENTE Markdown para tu respuesta. NO uses HTML.
+4. TRAZABILIDAD (SISTEMA [[REFS]]): Es OBLIGATORIO para que el sistema funcione.
+   - Tras tu respuesta, añade SIEMPRE una línea final con el formato: [[REFS: frase literal 1 | frase literal 2 | ...]]
+   - Identifica TODAS las frases literales exactas del texto original que has usado para tu resumen.
+   - RECUERDA: Sin este tag [[REFS]], el sistema no podrá subrayar las tarjetas y el alumno se perderá. Úsalo SIEMPRE.
 `;
 
         if (isTestActive) {
@@ -102,13 +101,18 @@ export const useChatStore = create((set, get) => ({
             const data = await response.json();
             let aiText = data.output || data.response || data.text || "Lo siento, he tenido un problema procesando tu duda.";
 
-            // 3. Procesar Referencias para el resaltado amarillo
-            const refsMatch = aiText.match(/\[\[REFS:\s*(.*?)\s*\]\]/i);
+            // 3. Procesar Referencias para el resaltado amarillo (Soporta múltiples líneas o espacios extra)
+            const refsMatch = aiText.match(/\[\[REFS:\s*([\s\S]*?)\s*\]\]/i);
             if (refsMatch) {
-                const phrases = refsMatch[1].split('|').map(p => p.trim()).filter(p => p.length > 5);
+                const rawPhrases = refsMatch[1];
+                const phrases = rawPhrases
+                    .split(/[|\|]/) // Soporta | como separador
+                    .map(p => p.trim())
+                    .filter(p => p.length > 8); // Solo frases con significado
+                
                 setHighlights(phrases);
-                // Limpiamos el tag del texto final para que el usuario no vea el código
-                aiText = aiText.replace(/\[\[REFS:.*?\]\]/gi, '').trim();
+                // Limpiamos el tag del texto final para que el alumno no vea el código
+                aiText = aiText.replace(/\[\[REFS:[\s\S]*?\]\]/gi, '').trim();
             }
 
             addMessage({ role: 'assistant', content: aiText });
