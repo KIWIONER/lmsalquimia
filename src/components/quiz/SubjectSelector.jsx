@@ -44,9 +44,16 @@ const SubjectSelector = ({ modules, onGenerate }) => {
                     <button 
                         onClick={onGenerate}
                         disabled={selectedTopics.length === 0}
-                        className={`btn-medical px-8 py-3 shrink-0 ${selectedTopics.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`text-xs font-bold py-4 px-10 rounded-2xl transition-all duration-300 flex items-center gap-3 shadow-xl ${
+                            selectedTopics.length === 0 
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' 
+                                : 'bg-medical-green-600 text-white hover:bg-medical-green-700 shadow-medical-green-600/20 group animate-in zoom-in duration-500'
+                        }`}
                     >
-                        Generar Test IA (30 Preguntas)
+                        <div className={`w-5 h-5 rounded-lg flex items-center justify-center transition-colors ${selectedTopics.length === 0 ? 'bg-slate-200' : 'bg-medical-green-500 group-hover:bg-medical-green-400'}`}>
+                            <Check className="w-3 h-3" />
+                        </div>
+                        <span className="uppercase tracking-widest">Generar Evaluación IA</span>
                     </button>
                 </div>
 

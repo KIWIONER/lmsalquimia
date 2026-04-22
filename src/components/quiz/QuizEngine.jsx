@@ -149,9 +149,10 @@ const QuizEngine = ({ modules }) => {
                     <AIStudyButton />
                     <button 
                         onClick={() => submitQuiz()}
-                        className="btn-medical text-xs bg-slate-900 border-none shadow-slate-200"
+                        className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] px-8 py-3.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 flex items-center gap-3"
                     >
-                        Finalizar Examen
+                        <CheckCircle2 size={16} className="text-medical-green-400" />
+                        Finalizar Evaluación
                     </button>
                 </div>
             </header>
