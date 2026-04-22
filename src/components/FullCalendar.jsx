@@ -94,15 +94,7 @@ const FullCalendar = () => {
     <div className="flex flex-col h-full bg-white">
       {/* Header Superior */}
       <div className="flex items-center justify-between p-8 border-b border-slate-100">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-medical-green-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-medical-green-500/20">
-            <CalendarIcon size={24} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Calendario <span className="text-medical-green-500 italic">Académico</span></h1>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Planificación dinámica de Alquimia LMS</p>
-          </div>
-        </div>
+        <div className="flex-1"></div>
 
         <div className="flex items-center bg-slate-50 p-1 rounded-2xl border border-slate-100">
           <button onClick={handlePrevMonth} className="px-4 py-2 hover:bg-white hover:shadow-sm rounded-xl text-slate-400 transition-all">
