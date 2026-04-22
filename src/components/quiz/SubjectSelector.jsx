@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuizStore } from '../../store/quizStore';
 import DifficultySelector from './DifficultySelector';
 import { BookOpen, Check } from 'lucide-react';
+import AIStudyButton from '../AIStudyButton';
 
 const SubjectSelector = ({ modules, onGenerate }) => {
     const { selectedTopics, toggleTopic, difficulty, mode, setMode } = useQuizStore();
@@ -9,9 +10,12 @@ const SubjectSelector = ({ modules, onGenerate }) => {
     return (
         <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
             <div className="max-w-4xl mx-auto space-y-8">
-                <header>
-                    <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Configuración de Evaluación</h1>
-                    <p className="text-slate-500 mt-2">Selecciona las unidades didácticas que deseas repasar. El "Cerebro" leerá los documentos originales y generará un examen adaptado a tu selección.</p>
+                <header className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Configuración de Evaluación</h1>
+                        <p className="text-slate-500 mt-2">Selecciona las unidades didácticas que deseas repasar. El "Cerebro" leerá los documentos originales y generará un examen adaptado a tu selección.</p>
+                    </div>
+                    <AIStudyButton />
                 </header>
 
                 {/* Controles Globales */}

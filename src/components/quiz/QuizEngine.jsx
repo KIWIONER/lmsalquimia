@@ -5,6 +5,7 @@ import ProgressBar from './ProgressBar';
 import SubjectSelector from './SubjectSelector';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AIStudyButton from '../AIStudyButton';
 
 const QuizEngine = ({ modules }) => {
     const { 
@@ -145,6 +146,7 @@ const QuizEngine = ({ modules }) => {
                     }`}>
                         {mode === 'practice' ? 'Modo Práctica' : 'Modo Examen'}
                     </span>
+                    <AIStudyButton />
                     <button 
                         onClick={() => submitQuiz()}
                         className="btn-medical text-xs bg-slate-900 border-none shadow-slate-200"

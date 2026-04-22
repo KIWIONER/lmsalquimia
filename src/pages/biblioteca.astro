@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import LibraryExplorer from '../components/LibraryExplorer.astro';
 import ChatSidebar from '../components/ChatSidebar';
+import AIStudyButton from '../components/AIStudyButton.jsx';
 ---
 
 <Layout title="Biblioteca de Recursos">
@@ -33,11 +34,15 @@ import ChatSidebar from '../components/ChatSidebar';
 	</div>
 
 	<div class="p-6">
-		<header class="mb-8">
-			<h1 class="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
-				Biblioteca Académica
-			</h1>
-			<p class="text-slate-500 text-sm mt-1">Explora tu material de estudio y consulta con el Agente Alquimia.</p>
+		<header class="mb-8 flex items-center justify-between">
+			<div>
+				<h1 class="text-3xl font-bold text-slate-800 tracking-tight">
+					Biblioteca Académica
+				</h1>
+				<p class="text-slate-500 text-sm mt-1">Explora tu material de estudio y consulta con el Agente Alquimia.</p>
+			</div>
+			
+			<AIStudyButton client:load />
 		</header>
 		
 		<LibraryExplorer />
