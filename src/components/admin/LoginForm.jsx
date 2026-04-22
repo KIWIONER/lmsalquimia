@@ -122,9 +122,9 @@ const LoginForm = ({ onLogin }) => {
                     </button>
                 </form>
                 
-                <div className="px-10 pb-10 text-center">
+                <div className="px-10 pb-16 text-center">
                     <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">
-                        Este es un panel de acceso restingido.<br/>
+                        Este es un panel de acceso restringido.<br/>
                         El acceso no autorizado será bloqueado.
                     </p>
                 </div>
