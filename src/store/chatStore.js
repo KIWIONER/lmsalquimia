@@ -101,18 +101,19 @@ export const useChatStore = create((set, get) => ({
             const data = await response.json();
             let aiText = data.output || data.response || data.text || "Lo siento, he tenido un problema procesando tu duda.";
 
-            // 3. Procesar Referencias para el resaltado amarillo (Soporta múltiples líneas o espacios extra)
-            const refsMatch = aiText.match(/\[\[REFS:\s*([\s\S]*?)\s*\]\]/i);
+            // 3. Procesar Referencias para el resaltado amarillo (ULTRA-ROBUSTO)
+            const refsMatch = aiText.match(/\[\[\s*REFS\s*:\s*([\s\S]*?)\s*\]\]/i);
             if (refsMatch) {
-                const rawPhrases = refsMatch[1];
-                const phrases = rawPhrases
-                    .split(/[|\|]/) // Soporta | como separador
+                const phrases = refsMatch[1]
+                    .split(/[|\|]/)
                     .map(p => p.trim())
-                    .filter(p => p.length > 8); // Solo frases con significado
+                    .filter(p => p.length > 5);
                 
-                setHighlights(phrases);
-                // Limpiamos el tag del texto final para que el alumno no vea el código
-                aiText = aiText.replace(/\[\[REFS:[\s\S]*?\]\]/gi, '').trim();
+                if (phrases.length > 0) {
+                    setHighlights(phrases);
+                }
+                // Limpiamos CUALQUIER variante del tag del texto final
+                aiText = aiText.replace(/\[\[\s*REFS\s*:[\s\S]*?\]\]/gi, '').trim();
             }
 
             addMessage({ role: 'assistant', content: aiText });

@@ -209,7 +209,7 @@ Recuerda: NO TE SALGAS DE ESTE TEXTO Y RESPONDE SIEMPRE EN ESPAÑOL.`;
                         
                         return (
                             <section 
-                                key={block.id}
+                                key={`${block.id}-${highlights.length}`}
                                 ref={el => cardRefs.current[block.id] = el}
                                 className={`bg-white rounded-[2.5rem] border mb-10 overflow-hidden transition-all duration-500 shadow-xl group/card ${
                                     isCompleted 
