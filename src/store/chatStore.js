@@ -5,6 +5,7 @@ export const useChatStore = create((set, get) => ({
     loading: false,
     isTestActive: false,
     activeTestContent: '',
+    activeHighlightCardId: null,
     isOpen: false,
     highlights: [],
     
@@ -29,67 +30,87 @@ export const useChatStore = create((set, get) => ({
 
     // Acción centralizada para enviar mensajes a n8n (Gemini)
     sendMessage: async (text, context = {}) => {
-        const { addMessage, setLoading, isTestActive, setTestActive, activeTestContent, setActiveTestContent, setHighlights, openChat } = get();
-        
-        // Limpiamos resaltados previos al iniciar nueva consulta
-        setHighlights([]);
-        
-        // Aseguramos que el chat esté abierto si mandamos algo
-        openChat();
+        const { addMessage, setLoading, setTestActive, activeTestContent, setActiveTestContent, setHighlights, openChat } = get();
 
-        // Si el contexto indica que iniciamos un test, lo activamos y guardamos el contenido
-        if (context.isTestRequest) {
+        // ─── FUENTE DE VERDAD: context.isTestRequest manda sobre el estado global ───
+        // Esto evita que un test previo (isTestActive=true en el store) contamine
+        // una petición de Resumir que llega justo después antes de que Zustand flush.
+        const isThisATestRequest  = context.isTestRequest === true;
+        const isThisASummaryRequest = context.isTestRequest === false;
+
+        // Sincronizamos el store con la intención real de esta llamada
+        if (isThisATestRequest) {
             setTestActive(true);
-            if (context.blockContent) {
-                setActiveTestContent(context.blockContent);
-            }
+            set({ activeHighlightCardId: null }); // Los tests no usan subrayado persistente
+            if (context.blockContent) setActiveTestContent(context.blockContent);
+        } else if (isThisASummaryRequest) {
+            setTestActive(false);
+            setActiveTestContent('');
+            set({ activeHighlightCardId: context.targetBlockId || null });
+        } else {
+            // Consulta normal
+            set({ activeHighlightCardId: null });
         }
 
-        // 1. Añadimos el mensaje del usuario al estado
+        // Limpiamos resaltados previos al iniciar nueva consulta
+        setHighlights([]);
+
+        // Aseguramos que el chat esté abierto
+        openChat();
+
+        // 1. Añadimos el mensaje del usuario / indicador de sistema al estado
         if (context.isHidden) {
-            // Si es oculto, mandamos un aviso visual amigable dependiendo del tipo de petición
-            const systemMsg = context.isTestRequest 
-                ? 'Generando test de autoevaluación...' 
+            const systemMsg = isThisATestRequest
+                ? 'Generando test de autoevaluación...'
                 : 'Generando resumen y subrayado de la tarjeta...';
             addMessage({ role: 'system_info', content: systemMsg });
         } else {
             addMessage({ role: 'user', content: text });
         }
-        
+
         setLoading(true);
 
-        // 2. Preparamos el input para la IA (VERACIDAD EXTREMA Y REFERENCIAS)
-        let aiInput = text;
+        // 2. Preparamos el input para la IA
         const currentContext = { ...context };
 
-        const systemRules = `
+        // Definimos las reglas base
+        const systemRulesBase = `
 [IDENTIDAD: CEREBRO - TUTOR DOCTORAL DE ALQUIMIA]
 Eres "Cerebro", el tutor inteligente y experto de Alquimia LMS. Tu personalidad es culta, pedagógica y profundamente profesional. Tu lengua nativa es el gallego, lo que te otorga un matiz de sabiduría y cercanía, aunque respondes siempre con elegancia y precisión en el idioma que el alumno prefiera (predeterminado: Castellano).
 
-[BASE DE CONOCIMIENTO Y HERRAMIENTAS]
-- Tu ÚNICA fuente de verdad son las TARJETAS de la Unidad Didáctica (UD) actual.
-- Estás conectado a la herramienta "obtener-documento-actual". Para usarla, debes pasar el valor del slug exacto que recibes: "${currentContext.current_slug}".
-- El contenido de las tarjetas viene estructurado en Markdown. Cada encabezado "##" identifica el TÍTULO DE UNA TARJETA única.
-
 [REGLAS DE ORO DE RESPUESTA]:
-1. NAVEGACIÓN PRECISA: Si el alumno pregunta por un punto concreto (ej: "Sección 3.2"), busca el encabezado "## 3.2" en el texto recibido y explícalo basándote SOLO en ese bloque.
-2. VERACIDAD ABSOLUTA: No inventes datos. No busques información externa ni menciones PDFs fuera de estas tarjetas. Si algo no consta, di: "No he localizado ese dato específico en los materiales de esta unidad".
+1. NAVEGACIÓN PRECISA: Si el alumno pregunta por un punto concreto (ej: "Sección 3.2"), busca el encabezado "##" correspondiente y explícalo.
+2. VERACIDAD ABSOLUTA: No inventes datos. No busques información externa. Si algo no consta, di: "No he localizado ese dato específico".
 3. TRACEABILIDAD ([[REFS]]): Es OBLIGATORIO. Identifica las frases LITERALES y LARGAS originales del texto. Tras tu respuesta, añade una línea final con este formato: [[REFS: frase literal 1 | frase literal 2 | ...]]
-4. FORMATO: Usa EXCLUSIVAMENTE Markdown (**negrita**, *cursiva*, listas). PROHIBIDO usar etiquetas HTML (<ins>, <u>, etc).
-5. ESTILO: Tono doctoral y empático. Máximo 3-4 párrafos por respuesta.
+4. FORMATO: Usa EXCLUSIVAMENTE Markdown. PROHIBIDO etiquetas HTML.
+5. ESTILO: Tono doctoral y empático. Máximo 3-4 párrafos.
 `;
 
-        if (isTestActive) {
-            const contentToUse = context.blockContent || activeTestContent;
-            currentContext.current_slug = "test-isolated-context";
-            currentContext.current_carpeta = "isolated";
+        const toolRules = `
+[BASE DE CONOCIMIENTO Y HERRAMIENTAS]
+- Tu ÚNICA fuente de verdad son las TARJETAS de la Unidad Didáctica (UD) actual.
+- Estás conectado a la herramienta "obtener-documento-actual". Para usarla, debes pasar el valor del slug exacto: "${currentContext.current_slug}".
+`;
 
-            aiInput += `\n\n${systemRules}\n\n[ESTÁS EN MODO TEST]:
-- ÚNICO contenido válido: "${contentToUse}". 
-- Envía 1 pregunta con 4 opciones. 
-- Tras la pregunta 5, usa [[COMPLETADO]].`;
+        let aiInput = "";
+
+        if (isThisATestRequest) {
+            const contentToUse = context.blockContent || activeTestContent;
+            currentContext.current_slug = 'test-isolated-context';
+            currentContext.current_carpeta = 'isolated';
+            aiInput = `${systemRulesBase}\n\n[MODO TEST AISLADO]:\r
+- ÚNICO contenido válido: "${contentToUse}".\r
+- Envía 1 pregunta con 4 opciones.\r
+- Tras la pregunta 5, usa [[COMPLETADO]].\n\nORDEN: ${text}`;
+        } else if (isThisASummaryRequest) {
+            // MODO RESUMEN: Ocultamos las herramientas de búsqueda para que NO intente usar RAG
+            // y se vea obligado a usar el bloque de texto que le pasamos por prompt.
+            aiInput = `${systemRulesBase}\n\n[MODO RESUMEN CRÍTICO]:\r
+- Ignora cualquier otra tarjeta o conocimiento previo.\r
+- Usa exclusivamente el bloque de texto proporcionado en la orden siguiente.\n\nORDEN: ${text}`;
         } else {
-            aiInput += `\n\n${systemRules}`;
+            // Consulta normal: habilitamos herramientas
+            aiInput = `${systemRulesBase}\n${toolRules}\n\nORDEN: ${text}`;
         }
 
         try {
@@ -100,7 +121,7 @@ Eres "Cerebro", el tutor inteligente y experto de Alquimia LMS. Tu personalidad 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     chatInput: aiInput,
-                    sessionId: 'estudiante-demo',
+                    sessionId: context.sessionId || 'estudiante-demo',
                     ...currentContext
                 }),
             });

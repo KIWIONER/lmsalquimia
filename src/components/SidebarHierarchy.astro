@@ -138,6 +138,9 @@ const progressPercentage = activeModuleUnits.length > 0
 
             const userId = 'estudiante-demo';
             
+            // Eliminar canal previo si existe para evitar errores de re-suscripción
+            supabase.removeChannel(supabase.channel('realtime_progress'));
+            
             supabase
                 .channel('realtime_progress')
                 .on(

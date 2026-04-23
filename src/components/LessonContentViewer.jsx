@@ -20,39 +20,63 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
     const [isInnerSidebarOpen, setIsInnerSidebarOpen] = useState(true);
     const [completedCardIds, setCompletedCardIds] = useState(new Set());
     const [activeTestingCardId, setActiveTestingCardId] = useState(null);
-    const { messages, sendMessage, setTestActive, highlights } = useChatStore();
+    const { messages, sendMessage, setTestActive, highlights, activeHighlightCardId } = useChatStore();
     const cardRefs = useRef({});
 
-    const highlightContent = (content) => {
-        if (!highlights || highlights.length === 0) return content;
-        
+    const highlightContent = (content, cardHighlights) => {
+        if (!cardHighlights || cardHighlights.length === 0) return content;
+
+        // ── Expandir frases: completas + sub-frases por coma + ventanas de 3 palabras ──
+        // Esto garantiza cobertura amplia aunque la IA parafrasee ligeramente.
+        const matchTargets = new Set();
+        cardHighlights.forEach(phrase => {
+            if (!phrase || phrase.length < 5) return;
+            matchTargets.add(phrase);
+
+            // Sub-frases separadas por coma o punto y coma
+            phrase.split(/[,;]/).forEach(sub => {
+                const t = sub.trim();
+                if (t.length >= 10) matchTargets.add(t);
+            });
+
+            // Ventanas deslizantes de 3 palabras consecutivas
+            const rawWords = phrase.replace(/[*_`]/g, '').split(/\s+/).filter(w => w.length > 2);
+            for (let i = 0; i <= rawWords.length - 3; i++) {
+                matchTargets.add(rawWords.slice(i, i + 3).join(' '));
+            }
+        });
+
+        // Ordenar de mayor a menor para que las frases largas ganen prioridad
+        const sorted = [...matchTargets].sort((a, b) => b.length - a.length);
+
         let processed = content;
-        // Invertimos el orden para resaltar primero las frases más largas y evitar solapamientos incorrectos
-        const sortedHighlights = [...highlights].sort((a, b) => b.length - a.length);
 
-        sortedHighlights.forEach(phrase => {
-            if (!phrase || phrase.length < 8) return; // Ignorar frases demasiado cortas
-            
-            // Limpiamos la frase de caracteres que puedan romper regex o markdown
-            const cleanPhrase = phrase.replace(/[.?¿!¡(),]/g, '');
-            const words = cleanPhrase.split(/\s+/).filter(w => w.length > 1);
-            
-            if (words.length === 0) return;
+        sorted.forEach(phrase => {
+            if (!phrase || phrase.length < 5) return;
 
-            // Creamos un patrón flexible que ignora símbolos de markdown (* _) y espacios/puntuación entre palabras
+            const cleanPhrase = phrase.replace(/[.?¿!¡(),;:]/g, '').trim();
+            const words = cleanPhrase.split(/\s+/).filter(w => w.length > 2);
+            if (words.length < 2) return;
+
+            // Entre palabras permitimos hasta 5 caracteres arbitrarios (sin salto de línea)
+            // para absorber puntuación, tildes, asteriscos de markdown, etc.
             const regexStr = words.map(word => {
                 const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                return `[\\*_]*${escaped}[\\*_]*`;
-            }).join('[^a-zA-Z0-9]*\\s+[^a-zA-Z0-9]*');
+                return `[*_]{0,2}${escaped}[*_]{0,2}`;
+            }).join('[^\n]{0,6}');
 
             try {
                 const regex = new RegExp(`(${regexStr})`, 'gi');
-                // Usamos un estilo inline directo y una clase de Tailwind para asegurar visibilidad
-                processed = processed.replace(regex, '<mark class="bg-yellow-200/80 text-orange-950 font-bold px-1 rounded-sm shadow-sm border-b border-yellow-400" style="background-color: #fef08a; color: #431407;">$1</mark>');
+                // Color pastel suave: amarillo muy claro con subrayado tenue, texto en negro
+                processed = processed.replace(regex, (match) => {
+                    if (match.includes('<mark')) return match; // no re-envolver
+                    return `<mark style="background-color:#fefce8;color:#000000;border-bottom:1.5px solid #fde68a;border-radius:2px;padding:0 2px;">${match}</mark>`;
+                });
             } catch (e) {
-                console.error("Highlight Error:", e);
+                // silencioso — regex malformado por un edge case, simplemente lo saltamos
             }
         });
+
         return processed;
     };
 
@@ -105,39 +129,45 @@ const LessonContentViewer = ({ docId, unitName, moduleName }) => {
     };
 
     const handleSummaryClick = async (block) => {
-        // Bloqueamos cualquier interacción previa para que la IA se resetee
+        console.log("📝 Resumiendo bloque:", block.titulo, block.id);
         setTestActive(false);
 
-        const prompt = `[ORDEN DE AISLAMIENTO ABSOLUTO - NO REVISES OTRAS TARJETAS]
-¡Hola Cerebro! Olvida cualquier pregunta, test o tema anterior. Céntrate ÚNICAMENTE en la tarjeta con ID "${block.id}" titulada "${block.titulo}".
+        // Calculamos la longitud del texto original para fijar el límite
+        const originalWordCount = block.contenido.split(/\s+/).filter(Boolean).length;
+        const maxWords = Math.max(40, Math.floor(originalWordCount * 0.35));
 
-TU TAREA:
-1. Haz un resumen magistral y denso del texto que te proporciono abajo.
-2. TRAZABILIDAD MÁXIMA (OBLIGATORIO): Debes identificar al menos entre 10 y 15 frases literales EXACTAS del texto de abajo para el sistema [[REFS]]. El alumno quiere ver CASI TODA la tarjeta subrayada en amarillo pastel.
-3. NO uses información general. NO busques en la base de datos. USA SOLAMENTE EL TEXTO SIGUIENTE.
+        const prompt = `[RESUMEN ESTRICTO - TARJETA ESPECÍFICA: "${block.titulo}" (ID: ${block.id})]
 
-TEXTO DE LA TARJETA "${block.titulo}":
+REGLAS ABSOLUTAS (incumplirlas es un error crítico):
+1. FOCO EXCLUSIVO: Estás resumiendo ÚNICAMENTE la tarjeta "${block.titulo}". No menciones contenido de otras secciones.
+2. BREVEDAD MÁXIMA: Tu resumen NO puede superar ${maxWords} palabras. El texto original tiene ${originalWordCount} palabras. Tu resumen debe ser SIGNIFICATIVAMENTE más corto. Escribe SOLO 3-5 frases clave que capturen la esencia.
+3. USA ÚNICAMENTE el texto que te doy abajo. Cero información externa, cero elaboración propia.
+4. SUBRAYADO MASIVO (OBLIGATORIO): Extrae entre 15 y 20 frases literales del texto original para el tag [[REFS]]. El alumno quiere ver la mayoría de la tarjeta subrayada en amarillo.
+
+TEXTO ORIGINAL DE "${block.titulo}":
 """
 ${block.contenido}
 """
 
-REPRODUCE EL TEXTO RESUMIDO Y FINALIZA CON EL TAG [[REFS: frase 1 | frase 2 | ... | frase 15]]`;
+Escribe el resumen de "${block.titulo}" (máximo ${maxWords} palabras) y termina con: [[REFS: frase literal 1 | frase literal 2 | ... | frase literal 20]]`;
 
         // Enviamos en modo oculto (isHidden)
         await sendMessage(prompt, {
             current_slug: unitName,
             isHidden: true,
             isTestRequest: false,
-            blockContent: block.contenido
+            blockContent: block.contenido,
+            targetBlockId: block.id
         });
     };
 
     const handleTestClick = async (block) => {
+        console.log("🧪 Generando test para bloque:", block.titulo, block.id);
         // Marcamos como "En Progreso"
         setActiveTestingCardId(block.id);
         
         // Enviamos el mensaje al chat con instrucciones precisas: 5 preguntas, FOCO ESTRICTO e IDIOMA ESPAÑOL
-        const prompt = `Por favor, genérame un mini-test interactivo de exactamente 5 preguntas técnicas sobre el contenido de esta sección titulada "${block.titulo}". 
+        const prompt = `Por favor, genérame un mini-test interactivo de exactamente 5 preguntas técnicas sobre el contenido de esta sección específica titulada "${block.titulo}" (ID: ${block.id}). 
 
 REGLAS CRÍTICAS DE FOCO E IDIOMA:
 1. HABLA SIEMPRE EN ESPAÑOL. Aunque el texto de la tarjeta esté en otro idioma, tus preguntas y feedback deben ser en castellano.
@@ -245,7 +275,7 @@ Recuerda: NO TE SALGAS DE ESTE TEXTO Y RESPONDE SIEMPRE EN ESPAÑOL.`;
                         
                         return (
                             <section 
-                                key={`${block.id}-${highlights.length}`}
+                                key={`${block.id}-${highlights.length}-${activeHighlightCardId === block.id}`}
                                 ref={el => cardRefs.current[block.id] = el}
                                 className={`bg-white rounded-[2.5rem] border mb-10 overflow-hidden transition-all duration-500 shadow-xl group/card ${
                                     isCompleted 
@@ -363,7 +393,7 @@ Recuerda: NO TE SALGAS DE ESTE TEXTO Y RESPONDE SIEMPRE EN ESPAÑOL.`;
                                                         remarkPlugins={[remarkGfm, remarkBreaks]}
                                                         rehypePlugins={[rehypeRaw]}
                                                     >
-                                                        {highlightContent(block.contenido)}
+                                                        {highlightContent(block.contenido, activeHighlightCardId === block.id ? highlights : [])}
                                                     </ReactMarkdown>
                                                 </div>
                                             </div>
