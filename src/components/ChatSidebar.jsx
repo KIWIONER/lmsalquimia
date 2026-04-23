@@ -141,11 +141,24 @@ const ChatSidebar = ({ unitName, moduleName, unitSlug }) => {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg, i) => {
                     if (msg.role === 'system_info') {
+                        // Si hay un mensaje posterior, es que este proceso ya terminó
+                        const isFinished = i < messages.length - 1;
+
                         return (
                             <div key={i} className="flex justify-center p-4 animate-in fade-in zoom-in duration-500">
-                                <div className="bg-medical-green-50 border border-medical-green-200/50 rounded-2xl px-6 py-4 flex flex-col items-center gap-3 shadow-sm max-w-[80%]">
-                                    <div className="w-8 h-8 border-3 border-medical-green-500 border-t-transparent rounded-full animate-spin"></div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-medical-green-700 text-center">{msg.content}</span>
+                                <div className={`border rounded-2xl px-6 py-4 flex flex-col items-center gap-3 shadow-sm max-w-[80%] transition-all duration-500 ${isFinished ? 'bg-white border-medical-green-200' : 'bg-medical-green-50 border-medical-green-200/50'}`}>
+                                    {isFinished ? (
+                                        <div className="w-8 h-8 bg-medical-green-500 rounded-full flex items-center justify-center text-white animate-in zoom-in duration-300">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                    ) : (
+                                        <div className="w-8 h-8 border-3 border-medical-green-500 border-t-transparent rounded-full animate-spin"></div>
+                                    )}
+                                    <span className={`text-[10px] font-black uppercase tracking-widest text-center ${isFinished ? 'text-medical-green-600' : 'text-medical-green-700'}`}>
+                                        {isFinished ? '¡Acción Completada con Éxito!' : msg.content}
+                                    </span>
                                 </div>
                             </div>
                         );
