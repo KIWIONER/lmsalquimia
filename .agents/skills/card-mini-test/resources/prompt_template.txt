@@ -1,0 +1,10 @@
+Genérame un mini-test de exactamente 5 preguntas sobre "${titulo}".
+REGLAS:
+1. SIEMPRE EN ESPAÑOL.
+2. USA SOLO el texto proporcionado.
+3. UNA pregunta a la vez, con 4 opciones (a/b/c/d).
+4. Tras mi respuesta: feedback breve + siguiente pregunta  con 4 opciones (a/b/c/d).
+5. Tras la pregunta 5: escribe [[COMPLETADO]].
+
+Texto:
+${contenido}

@@ -1,10 +1,13 @@
-# build output
+# Next.js build output
+.next/
+out/
+build/
 dist/
-# generated types
-.astro/
+tsconfig.tsbuildinfo
 
 # dependencies
 node_modules/
+.pnpm-store
 
 # logs
 npm-debug.log*
@@ -12,16 +15,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-
 # environment variables
 .env
+.env*.local
 .env.production
 
-# macOS-specific files
+# IDE & OS
 .DS_Store
-
-# jetbrains setting folder
 .idea/
-
-# Local Netlify folder
+.vscode/
 .netlify
+.gemini/

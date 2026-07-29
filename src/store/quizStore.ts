@@ -17,6 +17,7 @@ interface QuizState {
     isSubmitted: boolean;
     mode: 'practice' | 'exam';
     difficulty: number;
+    numQuestions: number;
     status: 'setup' | 'generating' | 'playing' | 'finished';
     selectedTopics: string[];
     
@@ -30,6 +31,7 @@ interface QuizState {
     resetQuiz: () => void;
     setMode: (mode: 'practice' | 'exam') => void;
     setDifficulty: (level: number) => void;
+    setNumQuestions: (num: number) => void;
     setStatus: (status: 'setup' | 'generating' | 'playing' | 'finished') => void;
     toggleTopic: (slug: string) => void;
 }
@@ -43,6 +45,7 @@ export const useQuizStore = create<QuizState>()(
             isSubmitted: false,
             mode: 'practice',
             difficulty: 5,
+            numQuestions: 10,
             status: 'setup',
             selectedTopics: [],
 
@@ -84,6 +87,7 @@ export const useQuizStore = create<QuizState>()(
 
             setMode: (mode) => set({ mode }),
             setDifficulty: (level) => set({ difficulty: level }),
+            setNumQuestions: (num) => set({ numQuestions: num }),
             setStatus: (status) => set({ status }),
             toggleTopic: (slug) => set((state) => {
                 const isSelected = state.selectedTopics.includes(slug);

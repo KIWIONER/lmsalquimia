@@ -41,7 +41,7 @@ export async function getLibraryStructure(userId: string = 'estudiante-demo'): P
         .order('nombre', { ascending: true });
 
     if (docError) {
-        console.error('Error fetching library from database:', docError);
+        console.warn('Aviso Supabase: No se pudo conectar con la base de datos (credenciales por defecto o servidor no alcanzable).', docError.message || docError);
         return [];
     }
 
