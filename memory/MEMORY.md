@@ -79,6 +79,8 @@ graph TD
 | **Migración** | Next.js 15 + Supabase SSR | Reestructuración a `src/app/`, React 19, TypeScript estricto, `@supabase/ssr` y `/api/cerebro`. |
 | **Convención** | 100% TypeScript TSX | Conversión completa de componentes a `.tsx` y helpers a `.ts`. Eliminación de `.astro` y `.jsx`. |
 | **Conexión & Opt.** | Conexión n8n + Perf & A11y | Verificación de Webhook n8n real, PostCSS Tailwind v4, `next/font/google` y WCAG A11y. |
+| **Mobile-First & Static Build** | Transformación Mobile-First y Exportación Estática | Rediseño responsivo Mobile-First con el método 3 expertos: Drawer flotante en lecciones, Bottom Navigation tipo Instagram (`BottomNavigation.tsx`), selector 10/20/30 preguntas. Corrección de `generateStaticParams` dinámico en `leccion/[...path]/page.tsx`, remoción de `cookies()` de servidor para prerenderizado y build estático exitoso de las 79 páginas en Next.js `output: 'export'`. |
+| **Overflow Fix & UI Polish** | Corrección de Overflows en Lección | Eliminación de overflow horizontal mediante breadcrumbs adaptativos en móvil, truncado con `...` y forzado de `break-words` / `hyphens: auto` en H1 de `LessonContentViewer.tsx`. |
 
 ---
 
@@ -178,3 +180,35 @@ graph TD
 
 6. **Compilación de Producción:**
    - `npm run build` ejecutado exitosamente en Turbopack con **0 errores de compilación TypeScript** en las 14 rutas.
+
+---
+
+## 📱 7. Hito Mobile-First & Exportación Estática GitHub Pages (Detalle)
+
+### 📌 Resumen de Logros del Hito:
+
+1. **Diseño Mobile-First Global & Touch Targets (`src/styles/global.css`):**
+   - Incorporación de `touch-action: manipulation` para eliminar retardos táctiles de 300ms.
+   - Definición de `.touch-target` con un mínimo interactivo de `44x44px` siguiendo guías de Apple y Google.
+   - Prevenir desbordamiento horizontal global mediante `overflow-x-hidden`.
+
+2. **Navegación Inferior Móvil Estilo Instagram (`src/components/BottomNavigation.tsx`):**
+   - Creación del menú fijo inferior en la pantalla móvil con 5 destinos clave (Inicio, Biblioteca, Tests, Plan, Perfil).
+   - Ocultación del panel primario en smartphones (`hidden md:flex`) para liberar el 100% de la pantalla.
+   - Adición de `pb-16 md:pb-0` en `src/app/layout.tsx` para evitar superposición con el contenido.
+
+3. **Drawer Flotante de Lecciones & Prevención de Overflows:**
+   - Convertida la tabla de contenidos en `src/components/lesson/components/LessonTocSidebar.tsx` en un **Slide-over Drawer flotante** con backdrop traslúcido en pantallas `< 768px`.
+   - Modificados los breadcrumbs en `src/app/leccion/[...path]/page.tsx` para ocultar la jerarquía pesada en móviles y acortar el título de la unidad con `truncate`.
+   - Adición de `break-words` y `hyphens: auto` en el H1 de `LessonContentViewer.tsx` para evitar ruptura de contenedor por palabras médicas/técnicas extensas.
+
+4. **Motor de Evaluaciones Adaptativas Responsivo (`src/components/quiz/`):**
+   - Layout apilado verticalmente en móviles (`flex-col md:flex-row`).
+   - Selector configurable de preguntas (10, 20 o 30).
+   - Cálculo de nota real en `QuizEngine.tsx` con desglose explicativo clínico de preguntas falladas.
+
+5. **Compatibilidad con `output: 'export'` para GitHub Pages:**
+   - Adición de `output: 'export'` e `images: { unoptimized: true }` en [`next.config.mjs`](file:///workspaces/lmsalquimia/next.config.mjs).
+   - Eliminación de llamadas síncronas a `cookies()` en componentes de servidor del layout y dashboard para posibilitar la generación de páginas estáticas HTML.
+   - `generateStaticParams()` adaptado en `src/app/leccion/[...path]/page.tsx` para prerrenderizar dinámicamente las **79 páginas del LMS**.
+

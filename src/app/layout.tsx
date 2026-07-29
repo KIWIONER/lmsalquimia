@@ -4,6 +4,7 @@ import Link from 'next/link';
 import SidebarHierarchy from '@/components/SidebarHierarchy';
 import ChatDrawer from '@/components/ChatDrawer';
 import SidebarCollapseButton from '@/components/SidebarCollapseButton';
+import BottomNavigation from '@/components/BottomNavigation';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -15,6 +16,13 @@ const inter = Inter({
 export const metadata = {
   title: 'Alquimia LMS - Escuela Online de Nutrición y Dietética',
   description: 'Sistema de Gestión del Aprendizaje impulsado por IA Adaptativa y Micro-learning.',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -35,13 +43,13 @@ export default function RootLayout({
   return (
     <html lang="es" className={inter.variable}>
       <body className={`h-screen overflow-hidden flex flex-col bg-slate-50 ${inter.className}`}>
-        {/* Global Navbar */}
-        <nav className="h-16 border-b border-slate-200 bg-white flex items-center px-6 justify-between shrink-0 z-50 shadow-sm relative">
+        {/* Global Navbar Responsivo */}
+        <nav className="h-16 border-b border-slate-200 bg-white flex items-center px-4 sm:px-6 justify-between shrink-0 z-50 shadow-sm relative">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-2xl shadow-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-sm">
               🏺
             </div>
-            <span className="font-bold text-xl tracking-tight text-slate-800 italic">
+            <span className="font-bold text-lg sm:text-xl tracking-tight text-slate-800 italic">
               Alquimia <span className="text-medical-green-500 not-italic">LMS</span>
             </span>
           </Link>
@@ -58,23 +66,23 @@ export default function RootLayout({
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-end">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="hidden sm:flex flex-col items-end">
                 <span className="text-[10px] text-slate-400 font-bold uppercase">Alumno FP</span>
                 <span className="text-xs font-semibold text-slate-900">User Alquimia</span>
               </div>
               <Link
                 href="/login"
-                className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all"
+                className="px-2.5 sm:px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all touch-target"
               >
                 Acceso
               </Link>
             </div>
-            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-400">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-400 shrink-0">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-5 w-5 sm:h-6 sm:w-6"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -91,11 +99,11 @@ export default function RootLayout({
         </nav>
 
         {/* 3-Pane Layout */}
-        <main className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar */}
+        <main className="flex flex-1 overflow-hidden pb-16 md:pb-0">
+          {/* Left Sidebar Adaptable para Móviles */}
           <aside
             id="primary-sidebar"
-            className="w-[360px] shrink-0 z-40 shadow-xl shadow-slate-200/50 bg-white flex flex-col relative transition-all duration-500 ease-in-out overflow-visible"
+            className="hidden md:flex w-[360px] shrink-0 z-40 shadow-xl shadow-slate-200/50 bg-white flex-col relative transition-all duration-500 ease-in-out overflow-visible"
           >
             <SidebarCollapseButton />
             <SidebarHierarchy />
@@ -109,6 +117,9 @@ export default function RootLayout({
           {/* Right AI Drawer */}
           <ChatDrawer />
         </main>
+        
+        {/* Instagram-style Bottom Navigation for Mobile */}
+        <BottomNavigation />
       </body>
     </html>
   );

@@ -125,16 +125,21 @@ const LessonContentViewer: React.FC<LessonContentViewerProps> = ({ docId, unitNa
                     onScrollToBlock={scrollToBlock}
                     unitName={unitName}
                     isOpen={isInnerSidebarOpen}
+                    onClose={() => setIsInnerSidebarOpen(false)}
                 />
 
                 {/* Área de Tarjetas con Scroll Vertical Independiente */}
-                <main className="flex-1 h-full overflow-y-auto p-6 md:p-10 custom-scrollbar">
+                <main className="flex-1 h-full overflow-y-auto p-4 sm:p-6 md:p-10 custom-scrollbar">
                     <div className="max-w-4xl mx-auto">
-                        <div className="mb-10 text-center">
-                            <span className="text-xs font-bold text-medical-green-600 bg-medical-green-50 px-3 py-1 rounded-full uppercase tracking-widest">
+                        <div className="mb-6 md:mb-10 text-center">
+                            <span className="text-[10px] sm:text-xs font-bold text-medical-green-600 bg-medical-green-50 px-3 py-1 rounded-full uppercase tracking-widest break-words block max-w-fit mx-auto">
                                 {moduleName || 'Módulo'}
                             </span>
-                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 mt-4 tracking-tight">
+                            <h1 
+                                className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 mt-4 tracking-tight break-words"
+                                style={{ wordBreak: 'break-word', hyphens: 'auto' }}
+                                lang="es"
+                            >
                                 {unitName || 'Lección'}
                             </h1>
                         </div>

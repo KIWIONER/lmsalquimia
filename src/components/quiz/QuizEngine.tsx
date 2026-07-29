@@ -406,35 +406,36 @@ REGLA OBLIGATORIA: Responde ÚNICAMENTE con un arreglo JSON puro de ${numQuestio
 
     return (
         <div className="h-full flex flex-col bg-white overflow-hidden">
-            {/* Header de la Evaluación */}
-            <header className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white relative z-20 shrink-0">
-                <div className="flex items-center gap-6">
+            {/* Header de la Evaluación Responsivo */}
+            <header className="px-4 md:px-8 py-3 md:py-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white relative z-20 shrink-0">
+                <div className="flex items-center gap-3 md:gap-6">
                     <button 
                         onClick={() => setStatus('setup')} 
-                        className="text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-widest flex items-center gap-1"
+                        className="text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-widest flex items-center gap-1 touch-target"
                     >
                         ← Volver
                     </button>
-                    <div className="h-8 w-px bg-slate-100"></div>
+                    <div className="h-6 w-px bg-slate-100"></div>
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Unidades Multiselección</span>
-                        <span className="text-sm font-bold text-slate-800">{selectedTopics.length} Tópicos • {questions.length} Preguntas</span>
+                        <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evaluación IA</span>
+                        <span className="text-xs md:text-sm font-bold text-slate-800">{selectedTopics.length} Tópicos • {questions.length} Preguntas</span>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${
+                <div className="flex items-center gap-2 md:gap-4 ml-auto sm:ml-0">
+                    <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${
                         mode === 'practice' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                     }`}>
-                        {mode === 'practice' ? 'Modo Práctica' : 'Modo Examen'}
+                        {mode === 'practice' ? 'Práctica' : 'Simulacro'}
                     </span>
                     <AIStudyButton />
                     <button 
                         onClick={() => submitQuiz()}
-                        className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] px-8 py-3.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 flex items-center gap-3"
+                        className="bg-slate-900 text-white text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] md:tracking-[0.2em] px-4 md:px-8 py-2.5 md:py-3.5 rounded-xl hover:bg-slate-800 transition-all shadow-md flex items-center gap-2 touch-target"
                     >
-                        <CheckCircle2 size={16} className="text-medical-green-400" />
-                        Finalizar Evaluación
+                        <CheckCircle2 size={14} className="text-medical-green-400" />
+                        <span className="hidden sm:inline">Finalizar Evaluación</span>
+                        <span className="sm:hidden">Finalizar</span>
                     </button>
                 </div>
             </header>
@@ -443,8 +444,8 @@ REGLA OBLIGATORIA: Responde ÚNICAMENTE con un arreglo JSON puro de ${numQuestio
             <ProgressBar />
 
             {/* Contenedor de Preguntas SPA */}
-            <main className="flex-1 overflow-y-auto bg-slate-50/30 p-8 flex justify-center custom-scrollbar">
-                <div className="w-full max-w-2xl px-4">
+            <main className="flex-1 overflow-y-auto bg-slate-50/30 p-3 md:p-8 flex justify-center custom-scrollbar">
+                <div className="w-full max-w-2xl px-1 md:px-4">
                     <AnimatePresence mode="wait">
                         <QuestionCard key={currentIndex} />
                     </AnimatePresence>

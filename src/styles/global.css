@@ -14,15 +14,32 @@
 }
 
 @layer base {
+  html, body {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     background-color: var(--color-slate-50, #f8fafc);
     color: var(--color-slate-900, #0f172a);
     -webkit-font-smoothing: antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
 }
 
 @layer components {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .glass-panel {
     background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(12px);

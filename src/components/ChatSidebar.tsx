@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
+import { X } from 'lucide-react';
 
 interface ChatSidebarProps {
   unitName?: string;
@@ -15,7 +16,7 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlug }) => {
-    const { messages, loading, sendMessage, initChatIfNeeded, addMessage } = useChatStore();
+    const { messages, loading, sendMessage, initChatIfNeeded, addMessage, closeChat } = useChatStore();
     const [input, setInput] = useState('');
     const [isAlerting, setIsAlerting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -152,6 +153,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                         <span className="text-[10px] text-medical-green-600 font-medium">Conectado • Gemini 2.5</span>
                     </div>
                 </div>
+
+                {/* Botón Volver a la Lección */}
+                <button
+                    onClick={closeChat}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 shadow-sm transition-all touch-target"
+                    title="Cerrar chat y volver a la lección"
+                >
+                    <X size={15} />
+                    <span>Volver</span>
+                </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">

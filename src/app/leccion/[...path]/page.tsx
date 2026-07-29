@@ -14,12 +14,33 @@ export interface LessonPageProps {
 }
 
 export async function generateStaticParams() {
-  return [
-    { path: ['m1', 'inicio'] },
-    { path: ['m1', 'ud1'] },
-    { path: ['m2', 'inicio'] },
-    { path: ['m2', 'ud1'] },
-  ];
+  try {
+    const modules = await getLibraryStructure();
+    const params = [];
+    
+    for (const mod of modules) {
+      params.push({ path: [mod.id, 'inicio'] });
+      for (const unit of mod.units) {
+        params.push({ path: [mod.id, unit.slug] });
+      }
+    }
+    
+    // Always provide some fallbacks in case DB is empty during build
+    if (params.length === 0) {
+      return [
+        { path: ['m1', 'inicio'] },
+        { path: ['m1', 'ud1'] }
+      ];
+    }
+    
+    return params;
+  } catch (error) {
+    console.error('Error generating static params:', error);
+    return [
+      { path: ['m1', 'inicio'] },
+      { path: ['m1', 'ud1'] }
+    ];
+  }
 }
 
 export default async function LessonPage({ params }: LessonPageProps) {
@@ -71,30 +92,38 @@ export default async function LessonPage({ params }: LessonPageProps) {
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* Top Bar Navigation */}
-      <nav className="flex items-center justify-between px-6 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm z-10 shrink-0">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Link href="/biblioteca" className="hover:text-medical-green-600 transition-colors">
-            Biblioteca
+      <nav className="flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm z-10 shrink-0 min-w-0">
+        {/* Left Side: Breadcrumbs adaptativos */}
+        <div className="flex items-center gap-1 md:gap-2 text-xs text-slate-500 min-w-0 flex-1">
+          <Link href="/biblioteca" className="hover:text-medical-green-600 transition-colors flex items-center shrink-0 py-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:hidden mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="hidden md:inline">Biblioteca</span>
+            <span className="md:hidden font-bold">Atrás</span>
           </Link>
-          <span>/</span>
-          <span className="font-medium text-slate-700">{moduleDisplayName}</span>
-          <span>/</span>
-          <span className="text-medical-green-600 font-bold bg-medical-green-50 px-2 py-0.5 rounded-full">
+          <span className="hidden md:inline shrink-0">/</span>
+          <span className="hidden md:inline font-medium text-slate-700 truncate max-w-[150px] lg:max-w-[300px]">
+            {moduleDisplayName}
+          </span>
+          <span className="hidden md:inline shrink-0">/</span>
+          <span className="text-medical-green-600 font-bold bg-transparent md:bg-medical-green-50 px-1 md:px-2 py-0.5 md:rounded-full truncate min-w-0">
             {unitNombre.replace(/\.(pdf|PDF|docx|DOCX)$/, '')}
           </span>
         </div>
 
-        <div className="flex items-center gap-6">
+        {/* Right Side: Actions */}
+        <div className="flex items-center gap-3 md:gap-6 shrink-0 ml-2">
           {pdfUrl && (
             <a
               href={pdfUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-[10px] font-bold text-slate-400 hover:text-medical-green-600 transition-colors flex items-center gap-1.5 shrink-0"
+              className="text-[10px] font-bold text-slate-400 hover:text-medical-green-600 transition-colors flex items-center md:gap-1.5 shrink-0 touch-target"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-3.5 w-3.5"
+                className="h-5 w-5 md:h-3.5 md:w-3.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -106,10 +135,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
                   d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                 />
               </svg>
-              NUEVA PESTAÑA
+              <span className="hidden md:inline">NUEVA PESTAÑA</span>
             </a>
           )}
-          <div className="scale-90 origin-right">
+          <div className="scale-75 md:scale-90 origin-right shrink-0">
             <AIStudyButton />
           </div>
         </div>
