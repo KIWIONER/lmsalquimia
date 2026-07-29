@@ -145,12 +145,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // ── Indicador visual en el chat ──
     if (context.isHidden) {
-      let infoText = 'Procesando...';
-      if (isTestRequest) infoText = 'Generando test de autoevaluación...';
-      else if (isSummaryRequest) infoText = 'Generando resumen de la tarjeta...';
-      else if (isHighlightRequest) infoText = 'Analizando contenido para subrayar...';
-      else if (isTestContinuation) infoText = 'Generando siguiente pregunta...';
-      addMessage({ role: 'system_info', content: infoText });
+      if (!context.isOptionSelect) {
+        let infoText = 'Procesando...';
+        if (isTestRequest) infoText = 'Generando test de autoevaluación...';
+        else if (isSummaryRequest) infoText = 'Generando resumen de la tarjeta...';
+        else if (isHighlightRequest) infoText = 'Analizando contenido para subrayar...';
+        else if (isTestContinuation) infoText = 'Generando siguiente pregunta...';
+        addMessage({ role: 'system_info', content: infoText });
+      }
     } else {
       addMessage({ role: 'user', content: text });
     }

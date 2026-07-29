@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
-import { X } from 'lucide-react';
+import { X, CheckCircle, XCircle } from 'lucide-react';
 
 interface ChatSidebarProps {
   unitName?: string;
@@ -19,6 +19,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
     const { messages, loading, sendMessage, initChatIfNeeded, addMessage, closeChat, isTestActive } = useChatStore();
     const [input, setInput] = useState('');
     const [isAlerting, setIsAlerting] = useState(false);
+    const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -94,10 +95,29 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
         return options;
     };
 
-    const handleOptionSelect = (option: { id: string; text: string }) => {
+    const handleOptionSelect = (msgIndex: number, option: { id: string; text: string }) => {
         if (loading) return;
+        
+        setSelectedOptions(prev => ({ ...prev, [msgIndex]: option.id }));
+        
         const responseText = `Mi respuesta es la ${option.id}: ${option.text}`;
-        handleSend(null, responseText);
+        
+        const currentPath = window.location.pathname;
+        const toKebabCase = (str: string) =>
+            str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-/]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const match = currentPath.match(/^\/leccion\/(.*)/);
+        let raw_slug = match ? match[1] : '';
+        if (!raw_slug && unitName) raw_slug = unitName.replace(/\.(pdf|PDF|docx|DOCX)$/, '');
+        const current_slug = toKebabCase(raw_slug);
+        const current_carpeta = current_slug.split('/')[0] || "";
+
+        sendMessage(responseText, {
+            isHidden: true,
+            isOptionSelect: true,
+            isTestContinuation: true,
+            current_slug,
+            current_carpeta
+        });
     };
 
     const handleSend = async (e: React.FormEvent | null, forcedInput: string | null = null) => {
@@ -204,8 +224,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                 ) : (
                                     (()=>{
                                         const options = extractOptions(msg.content);
-                                        const isInteractive = msg.role === 'assistant' && i === messages.length - 1 && !loading && options.length > 0;
-                                        
+                                        const selectedOptId = selectedOptions[i];
+                                        const isInteractive = msg.role === 'assistant' && options.length > 0;
+
+                                        // Averiguar si la respuesta dada en este mensaje o el siguiente fue correcta o incorrecta
+                                        const nextMsgText = messages[i + 1]?.content || messages[i + 2]?.content || '';
+                                        const isCorrect = Boolean(
+                                            nextMsgText && 
+                                            /correcta|excelente|acierto|¡exacto|muy bien|es la correcta/i.test(nextMsgText) &&
+                                            !/no es (la|correcto|correcta)|incorrecta|sin embargo/i.test(nextMsgText)
+                                        );
+
                                         // Limpiamos el contenido si hay botones interactivos para no duplicar información
                                         let displayContent = msg.content;
                                         if (isInteractive) {
@@ -238,16 +267,50 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                                 {/* BOTONES INTERACTIVOS A/B/C/D */}
                                                 {isInteractive && (
                                                     <div className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                                        {options.map((opt) => (
-                                                            <button
-                                                                key={opt.id}
-                                                                onClick={() => handleOptionSelect(opt)}
-                                                                className="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-medical-green-500 hover:bg-medical-green-50 text-slate-700 hover:text-medical-green-900 transition-all text-xs font-medium shadow-sm group flex gap-3 items-center"
-                                                            >
-                                                                <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 group-hover:bg-medical-green-500 group-hover:text-white transition-colors uppercase">{opt.id}</span>
-                                                                <span className="flex-1 leading-tight">{opt.text}</span>
-                                                            </button>
-                                                        ))}
+                                                        {options.map((opt) => {
+                                                            const isSelected = selectedOptId === opt.id;
+                                                            const isAnswered = Boolean(selectedOptId);
+
+                                                            let buttonStyle = 'bg-white border-slate-200 text-slate-700 hover:border-medical-green-500 hover:bg-medical-green-50';
+                                                            let badgeStyle = 'bg-slate-100 text-slate-400 group-hover:bg-medical-green-500 group-hover:text-white';
+                                                            let icon = null;
+
+                                                            if (isSelected) {
+                                                                if (!nextMsgText) {
+                                                                    // Mientras se procesa la respuesta
+                                                                    buttonStyle = 'bg-medical-green-50 border-medical-green-500 text-medical-green-900 font-bold ring-2 ring-medical-green-500/20 animate-pulse';
+                                                                    badgeStyle = 'bg-medical-green-500 text-white';
+                                                                } else if (isCorrect) {
+                                                                    // Respuesta correcta
+                                                                    buttonStyle = 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold shadow-md';
+                                                                    badgeStyle = 'bg-emerald-600 text-white';
+                                                                    icon = <CheckCircle size={16} className="text-emerald-600 shrink-0 ml-auto" />;
+                                                                } else {
+                                                                    // Respuesta incorrecta
+                                                                    buttonStyle = 'bg-rose-50 border-rose-400 text-rose-900 font-bold shadow-md';
+                                                                    badgeStyle = 'bg-rose-600 text-white';
+                                                                    icon = <XCircle size={16} className="text-rose-600 shrink-0 ml-auto" />;
+                                                                }
+                                                            } else if (isAnswered) {
+                                                                buttonStyle = 'bg-slate-50/50 border-slate-100 text-slate-400 opacity-60 pointer-events-none';
+                                                                badgeStyle = 'bg-slate-100 text-slate-300';
+                                                            }
+
+                                                            return (
+                                                                <button
+                                                                    key={opt.id}
+                                                                    disabled={isAnswered || loading}
+                                                                    onClick={() => handleOptionSelect(i, opt)}
+                                                                    className={`w-full text-left p-3 rounded-xl border transition-all text-xs font-medium shadow-sm group flex gap-3 items-center ${buttonStyle}`}
+                                                                >
+                                                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold transition-colors uppercase shrink-0 ${badgeStyle}`}>
+                                                                        {opt.id}
+                                                                    </span>
+                                                                    <span className="flex-1 leading-tight">{opt.text}</span>
+                                                                    {icon}
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
 
