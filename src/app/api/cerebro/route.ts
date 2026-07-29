@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-static';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     
     const webhookUrl =
       process.env.PUBLIC_N8N_CEREBRO_URL ||
+      process.env.NEXT_PUBLIC_N8N_CEREBRO_URL ||
       process.env.N8N_WEBHOOK_URL ||
       'https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista';
 
