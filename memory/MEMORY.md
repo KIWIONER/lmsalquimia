@@ -66,6 +66,8 @@ graph TD
    - Las consultas de contenidos y progreso DEBEN especificar el esquema `.schema('nutricionista')` en Supabase ([`src/lib/books.ts`](file:///workspaces/lmsalquimia/src/lib/books.ts)).
 5. **Carga Optimizada de Fuentes:**
    - Uso obligatorio de `next/font/google` para autoservicio de tipografías sin peticiones bloqueantes externas a Google Fonts.
+6. **Vercel React Best Practices:**
+   - Aplicación de guías Vercel Engineering: evitar barrel imports en componentes, favorecer importaciones directas por subarchivo y utilizar ternarios explícitos (`? : null`) en renderizado condicional numérico/booleano para evitar renderizado accidental de falsy values (`0`/`NaN`).
 
 ---
 
@@ -81,6 +83,7 @@ graph TD
 | **Conexión & Opt.** | Conexión n8n + Perf & A11y | Verificación de Webhook n8n real, PostCSS Tailwind v4, `next/font/google` y WCAG A11y. |
 | **Mobile-First & Static Build** | Transformación Mobile-First y Exportación Estática | Rediseño responsivo Mobile-First con el método 3 expertos: Drawer flotante en lecciones, Bottom Navigation tipo Instagram (`BottomNavigation.tsx`), selector 10/20/30 preguntas. Corrección de `generateStaticParams` dinámico en `leccion/[...path]/page.tsx`, remoción de `cookies()` de servidor para prerenderizado y build estático exitoso de las 79 páginas en Next.js `output: 'export'`. |
 | **Overflow Fix & UI Polish** | Corrección de Overflows en Lección | Eliminación de overflow horizontal mediante breadcrumbs adaptativos en móvil, truncado con `...` y forzado de `break-words` / `hyphens: auto` en H1 de `LessonContentViewer.tsx`. |
+| **29/07/2026** | Vercel React Best Practices Refactoring | Auditoría y refactorización aplicando el skill `vercel-react-best-practices`: eliminación de barrel imports en componentes de lección, renderizado condicional seguro con ternarios booleanos (`? : null`) en `Calendar.tsx` y `GanttTimeline.tsx`, e importaciones directas por subarchivo. Verificación limpia con `npx tsc --noEmit`. |
 
 ---
 

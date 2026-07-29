@@ -121,14 +121,14 @@ const GanttTimeline = () => {
                                     width: `${(unit.duration / 84) * 100}%` 
                                 }}
                             >
-                                {unit.progress > 0 && (
+                                {unit.progress > 0 ? (
                                     <div className="absolute inset-0 bg-black/10 rounded-2xl overflow-hidden">
                                          <div className="h-full bg-white/30 backdrop-blur-sm" style={{ width: `${unit.progress}%` }}></div>
                                     </div>
-                                )}
+                                ) : null}
                                 <div className="relative z-10 flex items-center justify-between w-full">
                                     <span className="text-[9px] font-black text-white uppercase tracking-widest truncate">{unit.duration} Días</span>
-                                    {unit.status === 'completed' && <CheckCircle2 size={12} className="text-white" />}
+                                    {unit.status === 'completed' ? <CheckCircle2 size={12} className="text-white" /> : null}
                                 </div>
                             </div>
                         </div>

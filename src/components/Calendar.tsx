@@ -50,13 +50,13 @@ const Calendar = () => {
 
       days.push(
         <div key={day} className="relative h-10 w-10 flex items-center justify-center">
-            {isToday && <div className="absolute inset-1 bg-medical-green-50 rounded-full border border-medical-green-100"></div>}
+            {isToday ? <div className="absolute inset-1 bg-medical-green-50 rounded-full border border-medical-green-100"></div> : null}
             <span className={`text-xs font-medium z-10 ${isToday ? 'text-medical-green-700 font-bold' : 'text-slate-600'}`}>{day}</span>
-            {event && (
+            {event ? (
               <div className={`absolute bottom-1 w-1.5 h-1.5 rounded-full z-20 ${
                 event.type === 'exam' ? 'bg-red-500' : event.type === 'session' ? 'bg-medical-green-500' : 'bg-amber-500'
               }`}></div>
-            )}
+            ) : null}
         </div>
       );
     }

@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import LessonContentViewer from '@/components/LessonContentViewer';
+import LessonContentViewer from '@/components/lesson/LessonContentViewer';
 import AIStudyButton from '@/components/AIStudyButton';
 import { getLibraryStructure } from '@/lib/books';
 import { supabase } from '@/lib/supabase';

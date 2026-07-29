@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 export const trackEvent = async (eventName: string, details: Record<string, any> = {}): Promise<void> => {
     try {
         const { error } = await supabase
+            .schema('nutricionista')
             .from('tracking')
             .insert([
                 { 
@@ -12,9 +13,12 @@ export const trackEvent = async (eventName: string, details: Record<string, any>
                 }
             ]);
         
-        if (error) throw error;
+        if (error) {
+            console.warn('Aviso Tracking (nutricionista.tracking):', error.message);
+            return;
+        }
         console.log(`Tracked: ${eventName}`, details);
     } catch (err: any) {
-        console.error('Tracking Error:', err.message);
+        console.warn('Aviso Tracking:', err?.message || err);
     }
 };
