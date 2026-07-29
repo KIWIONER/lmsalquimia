@@ -238,17 +238,42 @@ PREGUNTA: ${text}`;
     }
 
     try {
-      // ── Llamada segura a la API Route de Next.js /api/cerebro ──
-      const response = await fetch('/api/cerebro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatInput: aiInput,
-          sessionId,
-          isTestRequest: isTestRequest || freshState.isTestActive,
-          ...context,
-        }),
-      });
+      const payload = {
+        chatInput: aiInput,
+        sessionId,
+        isTestRequest: isTestRequest || freshState.isTestActive,
+        ...context,
+      };
+
+      const webhookUrl =
+        process.env.NEXT_PUBLIC_N8N_CEREBRO_URL ||
+        'https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista';
+
+      let response: Response;
+
+      try {
+        response = await fetch('/api/cerebro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        // En hosts estáticos como GitHub Pages (output: 'export'), las API Routes devuelven 405 o 404
+        if (response.status === 405 || response.status === 404) {
+          response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
+      } catch (localApiError) {
+        // Fallback en cliente si no hay servidor backend Next.js disponible
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!response.ok) throw new Error('Cerebro no responde');
 
