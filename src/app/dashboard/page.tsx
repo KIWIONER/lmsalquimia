@@ -3,15 +3,9 @@ import Link from 'next/link';
 import { BookOpen, GraduationCap, Clock, Award } from 'lucide-react';
 import { getLibraryStructure } from '@/lib/books';
 import AIStudyButton from '@/components/AIStudyButton';
-import { createClient } from '@/lib/supabase/server';
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const userId = user?.id || 'estudiante-demo';
+  const userId = 'estudiante-demo';
   const structure = await getLibraryStructure(userId);
 
   const allUnits = structure.flatMap((m) => m.units);
