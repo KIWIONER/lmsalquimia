@@ -8,6 +8,8 @@ import { supabase } from '../lib/supabase';
 
 export default function SidebarHierarchy() {
   const pathname = usePathname();
+  if (pathname?.startsWith('/admin')) return null;
+
   const [modules, setModules] = useState<Module[]>([]);
   const [totalDocs, setTotalDocs] = useState<number>(0);
   const [openModuleIds, setOpenModuleIds] = useState<Record<string, boolean>>({});

@@ -84,6 +84,7 @@ graph TD
 | **Mobile-First & Static Build** | Transformación Mobile-First y Exportación Estática | Rediseño responsivo Mobile-First con el método 3 expertos: Drawer flotante en lecciones, Bottom Navigation tipo Instagram (`BottomNavigation.tsx`), selector 10/20/30 preguntas. Corrección de `generateStaticParams` dinámico en `leccion/[...path]/page.tsx`, remoción de `cookies()` de servidor para prerenderizado y build estático exitoso de las 79 páginas en Next.js `output: 'export'`. |
 | **Overflow Fix & UI Polish** | Corrección de Overflows en Lección | Eliminación de overflow horizontal mediante breadcrumbs adaptativos en móvil, truncado con `...` y forzado de `break-words` / `hyphens: auto` en H1 de `LessonContentViewer.tsx`. |
 | **29/07/2026** | Vercel React Best Practices Refactoring | Auditoría y refactorización aplicando el skill `vercel-react-best-practices`: eliminación de barrel imports en componentes de lección, renderizado condicional seguro con ternarios booleanos (`? : null`) en `Calendar.tsx` y `GanttTimeline.tsx`, e importaciones directas por subarchivo. Verificación limpia con `npx tsc --noEmit`. |
+| **29/07/2026** | Admin Drill-Down Single Panel | Rediseño completo del panel de administración (`DocumentEditor.tsx`) a **1 solo panel lateral por niveles** (Asignaturas -> Unidades -> Temas) con botones de retorno (`< Asignaturas` / `< Unidades`), migas de pan interactivas y paginación rápida (`< Ant / Sig >`). |
 
 ---
 

@@ -187,6 +187,8 @@ const DocumentEditor = () => {
     const [pdfWidth, setPdfWidth] = useState(45);
     const [navWidth, setNavWidth] = useState(400);
     const [resizingMode, setResizingMode] = useState<any>(null); // 'nav' | 'pdf' | null
+    const [navLevel, setNavLevel] = useState<'asignaturas' | 'unidades' | 'temas'>('asignaturas');
+    const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
     const [asignaturasOpen, setAsignaturasOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [promptModal, setPromptModal] = useState<any>({ isOpen: false, title: '', defaultValue: '', onConfirm: null, onCancel: null });
@@ -256,7 +258,16 @@ const DocumentEditor = () => {
         return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
     }, [documents]);
 
-    const handleSelectDoc = (doc: any) => { setTarjetas([]); setSelectedCardId(null); setActiveEditorState(null); activeEditorRef.current = null; setSelectedDoc(doc); fetchTarjetas(doc.id); };
+    const handleSelectDoc = (doc: any) => { 
+        setTarjetas([]); 
+        setSelectedCardId(null); 
+        setActiveEditorState(null); 
+        activeEditorRef.current = null; 
+        setSelectedDoc(doc); 
+        if (doc.carpeta) setSelectedFolder(doc.carpeta);
+        fetchTarjetas(doc.id); 
+        setNavLevel('temas');
+    };
     const toggleFolder = (folder: any) => { setExpandedFolders((prev: any) => { const next = new Set(prev); if (next.has(folder)) next.delete(folder); else next.add(folder); return next; }); };
     
     const renameDoc = async (id: any, newName: any) => {
@@ -833,6 +844,16 @@ const DocumentEditor = () => {
                         )}
                     </div>
 
+                    <a 
+                        href="/admin/calendario" 
+                        className="bg-slate-900 text-white px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-md active:scale-95 transition-all flex items-center gap-2 border border-slate-700 shrink-0"
+                        title="Ir al Calendario Admin"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-medical-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Calendario</span>
+                    </a>
                     <button onClick={handleManualSave} className="bg-medical-green-600 text-white px-6 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-medical-green-700 shadow-md active:scale-95 transition-all">GUARDAR</button>
                     
                     <button 
@@ -889,161 +910,224 @@ const DocumentEditor = () => {
                     </div>
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf" className="hidden" />
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-4">
-                    {/* ROOT: ASIGNATURAS */}
-                    <div className="mb-4">
-                        <button onClick={() => setAsignaturasOpen(!asignaturasOpen)} className="w-full flex items-center justify-between p-4 rounded-2xl bg-medical-green-50/50 hover:bg-medical-green-50 transition-all border border-medical-green-100 shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-medical-green-500 text-white flex items-center justify-center shadow-md">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                                </div>
-                                <span className="text-[12px] font-black uppercase tracking-[0.2em] text-medical-green-900">Asignaturas</span>
-                            </div>
-                            <svg className={`h-4 w-4 text-medical-green-600 transition-transform ${asignaturasOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="3" /></svg>
-                        </button>
-                        
-                        {/* LISTA DE ASIGNATURAS (CARPETAS) */}
-                        {asignaturasOpen && (
-                            <div className="pl-6 mt-4 space-y-4 border-l-2 border-medical-green-50 ml-6">
-                                {groupedDocs.map(([folder, docs]) => (
-                                    <div key={folder} className="mb-4 relative">
-                                        <div className="absolute -left-[26px] top-6 w-4 h-0.5 bg-medical-green-100 rounded-r-full"></div>
-                                        <div className="group/folder flex items-center relative">
-                                            <button onClick={() => toggleFolder(folder)} className="flex-1 flex items-start justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
-                                                <div className="flex items-start gap-3">
-                                                    <div className={`w-2 h-2 shrink-0 border border-slate-200 rounded-full mt-1 ${expandedFolders.has(folder) ? 'bg-medical-green-500 border-medical-green-500' : 'bg-slate-200'}`} />
-                                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-800 text-left break-words leading-snug">{folder}</span>
-                                                </div>
-                                                <svg className={`h-4 w-4 shrink-0 transition-transform ${expandedFolders.has(folder) ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth="3" /></svg>
-                                            </button>
-                                            {/* BOTONES CONTEXTUALES */}
-                                            <div className="absolute right-4 flex items-center gap-1 opacity-0 group-hover/folder:opacity-100 transition-all">
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); triggerUpload(folder); }} 
-                                                    className="p-2 rounded-lg bg-white shadow-sm border border-slate-100 text-medical-green-600 hover:bg-medical-green-50 transition-all hover:scale-105"
-                                                    title="Subir PDF aquí"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteAsignatura(folder); }} 
-                                                    className="p-2 rounded-lg bg-white shadow-sm border border-slate-100 text-red-400 hover:text-red-500 hover:bg-red-50 transition-all hover:scale-105"
-                                                    title="Eliminar Asignatura"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {expandedFolders.has(folder) && (
-                                            <div className="pl-4 mt-2 space-y-1">
-                                                {docs.map(doc => <DocItem key={doc.id} doc={doc} isSelected={selectedDoc?.id === doc.id} onSelect={handleSelectDoc} onRename={renameDoc} onDelete={handleDeleteDoc} />)}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Botón Especial Calendario Admin */}
-                    <a 
-                        href="/admin/calendario" 
-                        className="w-full flex items-center justify-between p-4 mt-2 rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all group border border-slate-700"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-medical-green-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-medical-green-500/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Calendario <span className="text-medical-green-400 italic">Admin</span></span>
-                        </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 transform group-hover:translate-x-1 transition-transform text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </a>
-                </div>
-                </div>
-                
-                {/* RESIZER IZQUIERDO */}
-                {sidebarOpen && (
-                    <div 
-                        onMouseDown={(e) => handleStartResizing('nav', e)}
-                        className={`w-[6px] h-full cursor-col-resize hover:bg-medical-green-400 bg-slate-100 transition-colors z-[60] active:bg-medical-green-600 shrink-0 relative flex items-center justify-center`}
-                    >
-                        <div className="w-[1px] h-10 bg-slate-300 rounded-full"></div>
-                    </div>
-                )}
-
-                {/* PANEL 2: ÍNDICE */}
-            {selectedDoc && (
-                <div className="w-[400px] h-full bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
-                    <div className="p-10 border-b border-slate-100 bg-white/50 text-center shrink-0">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] block mb-2">Contenido de Unidad</span>
-                        <h3 className="text-[13px] font-black uppercase tracking-tight mb-4">{selectedDoc.nombre}</h3>
-                        
-                        {/* BULK ACTIONS TOOLBAR */}
-                        <div className="flex items-center justify-center gap-2 pt-4 border-t border-slate-100">
-                            <button onClick={toggleSelectAll} className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all">
-                                {selectedBulkIds.size === tarjetas.length ? 'Desmarcar' : 'Todos'}
-                            </button>
-                            {selectedBulkIds.size > 0 && (
-                                <button onClick={handleDeleteBulk} className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    Borrar ({selectedBulkIds.size})
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+                    {/* VISTA NIVEL 1: ASIGNATURAS */}
+                    {navLevel === 'asignaturas' && (
+                        <div className="space-y-3 animate-in fade-in duration-300">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Asignaturas ({groupedDocs.length})</span>
+                                <button onClick={handleCreateAsignatura} className="text-[9px] font-black uppercase text-medical-green-700 bg-medical-green-50 hover:bg-medical-green-100 border border-medical-green-200 px-2.5 py-1 rounded-lg transition-all" title="Crear nueva asignatura">
+                                    + Nueva
                                 </button>
-                            )}
+                            </div>
+                            {groupedDocs.map(([folder, docs]) => (
+                                <div key={folder} className="group/folder flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-medical-green-500 hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedFolder(folder); setNavLevel('unidades'); }}>
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-9 h-9 rounded-xl bg-medical-green-50 text-medical-green-600 border border-medical-green-100 flex items-center justify-center font-black shrink-0">
+                                            📚
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 truncate">{folder}</span>
+                                            <span className="text-[9px] font-bold text-slate-400 mt-0.5">{docs.length} Unidades</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); triggerUpload(folder); }} 
+                                            className="p-1.5 rounded-lg text-slate-400 hover:text-medical-green-600 hover:bg-medical-green-50 transition-all opacity-0 group-hover/folder:opacity-100"
+                                            title="Subir PDF a esta asignatura"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 4v16m8-8H4" /></svg>
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteAsignatura(folder); }} 
+                                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/folder:opacity-100"
+                                            title="Eliminar asignatura"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                        <svg className="h-4 w-4 text-slate-300 group-hover/folder:text-medical-green-500 transition-colors ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M9 5l7 7-7 7" /></svg>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pl-12 space-y-2">
-                        <DndContext sensors={sensors} onDragEnd={async (event) => {
-                            const { active, over } = event; if (!over || active.id === over.id) return;
-                            const oldIdx = tarjetas.findIndex(t => t.id === active.id); const newIdx = tarjetas.findIndex(t => t.id === over.id);
-                            const newTs = arrayMove(tarjetas, oldIdx, newIdx); setTarjetas(newTs);
-                            setSaveStatus('saving');
-                            try {
-                                const ups = newTs.map((t, i) => ({ id: t.id, orden: i, documento_id: selectedDoc.id, titulo: t.titulo, contenido: t.contenido, updated_at: new Date().toISOString() }));
-                                await supabase.schema('nutricionista').from('tarjetas').upsert(ups); setSaveStatus('saved');
-                                setTimeout(() => setSaveStatus('idle'), 2000);
-                            } catch { setSaveStatus('idle'); }
-                        }}>
-                            <SortableContext items={tarjetas.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                                {tarjetas.map((t, i) => (
-                                    <SortableIndexItem 
-                                        key={t.id} 
-                                        id={t.id} 
-                                        index={i} 
-                                        titulo={t.titulo} 
-                                        isActive={selectedCardId === t.id} 
-                                        isSelected={selectedBulkIds.has(t.id)}
-                                        onToggleSelect={toggleCardSelection}
-                                        onDelete={handleDeleteCard}
-                                        onSelect={() => setSelectedCardId(t.id)} 
+                    )}
+
+                    {/* VISTA NIVEL 2: UNIDADES (DOCS) */}
+                    {navLevel === 'unidades' && selectedFolder && (
+                        <div className="space-y-3 animate-in fade-in duration-300">
+                            {/* CABECERA RETORNO A ASIGNATURAS */}
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <button onClick={() => setNavLevel('asignaturas')} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-medical-green-700 hover:text-medical-green-900 transition-colors bg-medical-green-50 border border-medical-green-100 px-3 py-1.5 rounded-xl shadow-sm">
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M15 19l-7-7 7-7" /></svg>
+                                    Asignaturas
+                                </button>
+                                <button onClick={() => triggerUpload(selectedFolder)} className="p-1.5 px-3 rounded-xl bg-medical-green-500 text-white hover:bg-medical-green-600 shadow-sm transition-all text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                    + Subir PDF
+                                </button>
+                            </div>
+
+                            <div className="px-1 py-1">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">{selectedFolder}</span>
+                                <span className="text-[9px] font-bold text-slate-400 block mb-2">{((groupedDocs.find(([f]) => f === selectedFolder) || [])[1] || []).length} Unidades</span>
+                            </div>
+
+                            {/* LISTA DE UNIDADES DE LA ASIGNATURA */}
+                            <div className="space-y-2">
+                                {((groupedDocs.find(([f]) => f === selectedFolder) || [])[1] || []).map((doc: any) => (
+                                    <DocItem 
+                                        key={doc.id} 
+                                        doc={doc} 
+                                        isSelected={selectedDoc?.id === doc.id} 
+                                        onSelect={(d: any) => { handleSelectDoc(d); }} 
+                                        onRename={renameDoc} 
+                                        onDelete={handleDeleteDoc} 
                                     />
                                 ))}
-                            </SortableContext>
-                        </DndContext>
-                    </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* VISTA NIVEL 3: TEMAS / TARJETAS */}
+                    {navLevel === 'temas' && selectedDoc && (
+                        <div className="space-y-3 animate-in fade-in duration-300">
+                            {/* CABECERA RETORNO A UNIDADES */}
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <button onClick={() => setNavLevel('unidades')} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-medical-green-700 hover:text-medical-green-900 transition-colors bg-medical-green-50 border border-medical-green-100 px-3 py-1.5 rounded-xl shadow-sm">
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M15 19l-7-7 7-7" /></svg>
+                                    Unidades
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button onClick={toggleSelectAll} className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                        {selectedBulkIds.size === tarjetas.length ? 'Ninguno' : 'Todos'}
+                                    </button>
+                                    {selectedBulkIds.size > 0 && (
+                                        <button onClick={handleDeleteBulk} className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-red-50 text-red-600 hover:bg-red-600 hover:text-white">
+                                            Borrar ({selectedBulkIds.size})
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="px-1">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1 truncate">{selectedDoc.nombre}</span>
+                                <span className="text-[9px] font-bold text-slate-400 block mb-2">{tarjetas.length} Temas</span>
+                            </div>
+
+                            {/* LISTA DND DE TEMAS DE LA UNIDAD */}
+                            <DndContext sensors={sensors} onDragEnd={async (event) => {
+                                const { active, over } = event; if (!over || active.id === over.id) return;
+                                const oldIdx = tarjetas.findIndex(t => t.id === active.id); const newIdx = tarjetas.findIndex(t => t.id === over.id);
+                                const newTs = arrayMove(tarjetas, oldIdx, newIdx); setTarjetas(newTs);
+                                setSaveStatus('saving');
+                                try {
+                                    const ups = newTs.map((t, i) => ({ id: t.id, orden: i, documento_id: selectedDoc.id, titulo: t.titulo, contenido: t.contenido, updated_at: new Date().toISOString() }));
+                                    await supabase.schema('nutricionista').from('tarjetas').upsert(ups); setSaveStatus('saved');
+                                    setTimeout(() => setSaveStatus('idle'), 2000);
+                                } catch { setSaveStatus('idle'); }
+                            }}>
+                                <SortableContext items={tarjetas.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                                    <div className="space-y-2 max-h-[calc(100vh-240px)] overflow-y-auto custom-scrollbar pr-1">
+                                        {tarjetas.map((t, i) => (
+                                            <SortableIndexItem 
+                                                key={t.id} 
+                                                id={t.id} 
+                                                index={i} 
+                                                titulo={t.titulo} 
+                                                isActive={selectedCardId === t.id} 
+                                                isSelected={selectedBulkIds.has(t.id)}
+                                                onToggleSelect={toggleCardSelection}
+                                                onDelete={handleDeleteCard}
+                                                onSelect={() => setSelectedCardId(t.id)} 
+                                            />
+                                        ))}
+                                    </div>
+                                </SortableContext>
+                            </DndContext>
+                        </div>
+                    )}
+                </div>
+            </div>
+            
+            {/* RESIZER IZQUIERDO */}
+            {sidebarOpen && (
+                <div 
+                    onMouseDown={(e) => handleStartResizing('nav', e)}
+                    className={`w-[6px] h-full cursor-col-resize hover:bg-medical-green-400 bg-slate-100 transition-colors z-[60] active:bg-medical-green-600 shrink-0 relative flex items-center justify-center`}
+                >
+                    <div className="w-[1px] h-10 bg-slate-300 rounded-full"></div>
                 </div>
             )}
 
-            {/* PANEL 3: EDITOR */}
+            {/* PANEL 3: EDITOR UNIFICADO */}
             <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#fdfcfb]">
-                {/* EDITOR HEADER CON TOGGLE Y ESTADO */}
-                <div className="h-14 px-12 border-b border-slate-50 flex items-center bg-white/50 backdrop-blur-md z-[100] shrink-0 gap-8">
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
-                        <svg className={`h-5 w-5 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M11 19l-7-7 7-7" /></svg>
-                    </button>
-                    {selectedDoc ? (
-                        <div className="flex-1 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-black uppercase text-slate-300 tracking-[0.3em]">Editando</span>
-                                <span className="text-[11px] font-black uppercase text-slate-800 truncate max-w-md">{selectedDoc.nombre}</span>
-                            </div>
+                {/* EDITOR HEADER CON BREADCRUMB, PAGINACIÓN RÁPIDA Y TOGGLE */}
+                <div className="h-14 px-8 border-b border-slate-200/80 flex items-center justify-between bg-white/80 backdrop-blur-md z-[100] shrink-0 gap-6 shadow-sm">
+                    <div className="flex items-center gap-4 min-w-0">
+                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-900 hover:text-white transition-all shadow-sm shrink-0" title={sidebarOpen ? "Ocultar Navegación (Modo Enfoque)" : "Mostrar Navegación"}>
+                            <svg className={`h-4 w-4 transition-transform ${sidebarOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M11 19l-7-7 7-7" /></svg>
+                        </button>
+                        <div className="flex items-center gap-2 text-xs truncate">
+                            <button onClick={() => setNavLevel('asignaturas')} className="font-bold text-slate-400 hover:text-medical-green-600 transition-colors truncate">
+                                Asignaturas
+                            </button>
+                            {selectedFolder && (
+                                <>
+                                    <span className="text-slate-300 font-bold">/</span>
+                                    <button onClick={() => setNavLevel('unidades')} className="font-bold text-slate-500 hover:text-medical-green-600 transition-colors truncate">
+                                        {selectedFolder}
+                                    </button>
+                                </>
+                            )}
+                            {selectedDoc && (
+                                <>
+                                    <span className="text-slate-300 font-bold">/</span>
+                                    <button onClick={() => setNavLevel('temas')} className="font-black text-slate-800 uppercase tracking-tight hover:text-medical-green-600 transition-colors truncate">
+                                        {selectedDoc.nombre}
+                                    </button>
+                                </>
+                            )}
+                            {selectedCardId && (
+                                <>
+                                    <span className="text-slate-300 font-bold">/</span>
+                                    <span className="font-bold text-medical-green-700 bg-medical-green-50 border border-medical-green-100 px-2.5 py-0.5 rounded-lg text-[10px] shrink-0">
+                                        Tema #{tarjetas.findIndex(t => t.id === selectedCardId) + 1}
+                                    </span>
+                                </>
+                            )}
                         </div>
-                    ) : (
-                        <div className="flex-1 flex items-center justify-center">
-                             <span className="text-[10px] font-black uppercase text-slate-300 tracking-[1em] opacity-50">Selecciona una unidad</span>
+                    </div>
+
+                    {/* PAGINACIÓN RÁPIDA Y ESTADO */}
+                    {selectedDoc && tarjetas.length > 0 && (
+                        <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/60 p-1 rounded-xl shadow-inner">
+                                <button
+                                    disabled={tarjetas.findIndex(t => t.id === selectedCardId) <= 0}
+                                    onClick={() => {
+                                        const idx = tarjetas.findIndex(t => t.id === selectedCardId);
+                                        if (idx > 0) setSelectedCardId(tarjetas[idx - 1].id);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 shadow-sm"
+                                >
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M15 19l-7-7 7-7" /></svg>
+                                    Anterior
+                                </button>
+                                <span className="text-[10px] font-black text-slate-500 px-2">
+                                    {tarjetas.findIndex(t => t.id === selectedCardId) + 1} / {tarjetas.length}
+                                </span>
+                                <button
+                                    disabled={tarjetas.findIndex(t => t.id === selectedCardId) >= tarjetas.length - 1}
+                                    onClick={() => {
+                                        const idx = tarjetas.findIndex(t => t.id === selectedCardId);
+                                        if (idx >= 0 && idx < tarjetas.length - 1) setSelectedCardId(tarjetas[idx + 1].id);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 shadow-sm"
+                                >
+                                    Siguiente
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M9 5l7 7-7 7" /></svg>
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

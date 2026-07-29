@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useUIStore } from '../store/uiStore';
 
 interface SidebarCollapseButtonProps {
@@ -10,23 +11,30 @@ interface SidebarCollapseButtonProps {
 
 const SidebarCollapseButton: React.FC<SidebarCollapseButtonProps> = ({ hideButton = false }) => {
     const { isLeftSidebarOpen, toggleLeftSidebar } = useUIStore();
+    const pathname = usePathname();
+    const isAdmin = pathname?.startsWith('/admin');
 
     useEffect(() => {
         const sidebar = document.getElementById('primary-sidebar');
         if (sidebar) {
-            if (isLeftSidebarOpen) {
-                sidebar.style.width = '360px';
-                sidebar.style.minWidth = '360px';
-                sidebar.classList.remove('sidebar-collapsed');
+            if (isAdmin) {
+                sidebar.style.display = 'none';
             } else {
-                sidebar.style.width = '64px';
-                sidebar.style.minWidth = '64px';
-                sidebar.classList.add('sidebar-collapsed');
+                sidebar.style.display = '';
+                if (isLeftSidebarOpen) {
+                    sidebar.style.width = '360px';
+                    sidebar.style.minWidth = '360px';
+                    sidebar.classList.remove('sidebar-collapsed');
+                } else {
+                    sidebar.style.width = '64px';
+                    sidebar.style.minWidth = '64px';
+                    sidebar.classList.add('sidebar-collapsed');
+                }
             }
         }
-    }, [isLeftSidebarOpen]);
+    }, [isLeftSidebarOpen, isAdmin]);
 
-    if (hideButton) return null;
+    if (hideButton || isAdmin) return null;
 
     return (
         <button 
