@@ -4,8 +4,6 @@ import Link from 'next/link';
 import SidebarHierarchy from '@/components/SidebarHierarchy';
 import ChatDrawer from '@/components/ChatDrawer';
 import SidebarCollapseButton from '@/components/SidebarCollapseButton';
-import { createClient } from '@/lib/supabase/server';
-
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -19,16 +17,11 @@ export const metadata = {
   description: 'Sistema de Gestión del Aprendizaje impulsado por IA Adaptativa y Micro-learning.',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const navLinks = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Planificación', href: '/planificacion' },
@@ -53,7 +46,7 @@ export default async function RootLayout({
             </span>
           </Link>
 
-          <div className="flex items-center gap-6 text-sm font-medium text-slate-500">
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -66,27 +59,18 @@ export default async function RootLayout({
           </div>
 
           <div className="flex items-center gap-4">
-            {user ? (
+            <div className="flex items-center gap-3">
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-medical-green-600 font-bold uppercase tracking-wider">
-                  Sesión Activa SSR
-                </span>
-                <span className="text-xs font-semibold text-slate-900">{user.email}</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Alumno FP</span>
+                <span className="text-xs font-semibold text-slate-900">User Alquimia</span>
               </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Alumno FP</span>
-                  <span className="text-xs font-semibold text-slate-900">User Alquimia</span>
-                </div>
-                <Link
-                  href="/login"
-                  className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all"
-                >
-                  Acceso
-                </Link>
-              </div>
-            )}
+              <Link
+                href="/login"
+                className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all"
+              >
+                Acceso
+              </Link>
+            </div>
             <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-400">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

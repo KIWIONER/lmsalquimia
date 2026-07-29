@@ -28,11 +28,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const moduleCode = pathParts[0]?.toLowerCase() || '';
   const unitSlug = pathParts[1]?.toLowerCase() || '';
 
-  const serverSupabase = await createClient();
-  const {
-    data: { user },
-  } = await serverSupabase.auth.getUser();
-  const userId = user?.id || 'estudiante-demo';
+  const userId = 'estudiante-demo';
 
   const structure = await getLibraryStructure(userId);
   const activeModule = structure.find((m) => m.id.toLowerCase() === moduleCode);
