@@ -13,6 +13,15 @@ export interface LessonPageProps {
   }>;
 }
 
+export async function generateStaticParams() {
+  return [
+    { path: ['m1', 'inicio'] },
+    { path: ['m1', 'ud1'] },
+    { path: ['m2', 'inicio'] },
+    { path: ['m2', 'ud1'] },
+  ];
+}
+
 export default async function LessonPage({ params }: LessonPageProps) {
   const resolvedParams = await params;
   const pathParts = resolvedParams.path || [];
