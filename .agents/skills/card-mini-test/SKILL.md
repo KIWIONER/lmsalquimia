@@ -16,20 +16,9 @@ Permitir al estudiante autoevaluar su comprensión de una tarjeta específica me
 
 ## 📋 2. Reglas Invariantes del Prompt
 
-Cualquier invocación de mini-test generada por esta Skill **DEBE** incluir las siguientes reglas estrictas:
+Cualquier invocación de mini-test generada por esta Skill **DEBE** utilizar la plantilla de reglas estricta definida en:
+👉 [resources/prompt_template.txt](resources/prompt_template.txt)
 
-```text
-Genérame un mini-test de exactamente 5 preguntas sobre "${block.titulo}".
-REGLAS:
-1. SIEMPRE EN ESPAÑOL.
-2. USA SOLO el texto proporcionado de la tarjeta.
-3. UNA pregunta a la vez, con 4 opciones estructuradas (a, b, c, d).
-4. Tras cada respuesta del alumno: proporcionar feedback clínico/pedagógico breve + lanzar la siguiente pregunta con las 4 opciones estructuradas (a ,b, c, d).
-5. Tras responder la pregunta 5: finalizar obligatoriamente emitiendo la etiqueta [[COMPLETADO]].
-
-Texto de la tarjeta:
-${block.contenido}
-```
 
 ---
 
