@@ -25,12 +25,12 @@ jobs:
       - name: Build Next.js
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: "https://ybqzcxabblyzqhezanaf.supabase.co"
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicXpjeGFiYmx5enFoZXphbmFmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDQ2NDUxNiwiZXhwIjoyMDg2MDQwNTE2fQ.p3iwhlIHlAL93prx81H-w6Z-ebWOlWLfK_L3OOI13Og"
-          NEXT_PUBLIC_N8N_CEREBRO_URL: "https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista"
-          PUBLIC_SUPABASE_URL: "https://ybqzcxabblyzqhezanaf.supabase.co"
-          PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicXpjeGFiYmx5enFoZXphbmFmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDQ2NDUxNiwiZXhwIjoyMDg2MDQwNTE2fQ.p3iwhlIHlAL93prx81H-w6Z-ebWOlWLfK_L3OOI13Og"
-          PUBLIC_N8N_CEREBRO_URL: "https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://ybqzcxabblyzqhezanaf.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_N8N_CEREBRO_URL: ${{ secrets.NEXT_PUBLIC_N8N_CEREBRO_URL || 'https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista' }}
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL || 'https://ybqzcxabblyzqhezanaf.supabase.co' }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          PUBLIC_N8N_CEREBRO_URL: ${{ secrets.PUBLIC_N8N_CEREBRO_URL || 'https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista' }}
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
