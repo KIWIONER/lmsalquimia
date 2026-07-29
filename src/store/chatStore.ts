@@ -171,12 +171,20 @@ REGLAS: No inventes nada. Usa solo el contenido proporcionado. Formato Markdown 
       sessionId = freshState.activeTestSessionId || `test-${Date.now()}`;
       aiInput = `${sysRules}
 
-=== MODO TEST ===
-USA SOLO ESTE TEXTO (ningún otro):
+=== MODO TEST (PREGUNTA 1/5) ===
+USA SOLO ESTE TEXTO DE LA LECCIÓN (ningún otro):
 """
 ${context.blockContent}
 """
-Envía UNA pregunta con 4 opciones (a/b/c/d). Tras la 5ª pregunta escribe [[COMPLETADO]].
+
+REGLAS OBLIGATORIAS DE FORMATO:
+1. Redacta la pregunta 1 sobre el texto.
+2. Incluye OBLIGATORIAMENTE 4 opciones etiquetadas a), b), c), d) en líneas separadas.
+Ejemplo:
+a) Primera opción
+b) Segunda opción
+c) Tercera opción
+d) Cuarta opción
 
 ORDEN: ${text}`;
     } else if (isTestContinuation) {
@@ -184,14 +192,21 @@ ORDEN: ${text}`;
       aiInput = `${sysRules}
 
 === CONTINUANDO TEST ===
-USA SOLO ESTE TEXTO (ningún otro):
+USA SOLO ESTE TEXTO DE LA LECCIÓN (ningún otro):
 """
 ${freshState.activeTestContent}
 """
-El alumno solicita la siguiente pregunta. Continúa sin repetir preguntas ya hechas.
-Tras la 5ª pregunta escribe [[COMPLETADO]].
 
-ORDEN: Envía la siguiente pregunta.`;
+REGLAS OBLIGATORIAS DE FORMATO:
+1. Redacta la SIGUIENTE pregunta de autoevaluación.
+2. Incluye OBLIGATORIAMENTE 4 opciones etiquetadas a), b), c), d) en líneas separadas.
+Ejemplo:
+a) Primera opción
+b) Segunda opción
+c) Tercera opción
+d) Cuarta opción
+
+Tras la 5ª pregunta escribe [[COMPLETADO]].`;
     } else if (isHighlightRequest) {
       aiInput = `${sysRules}
 
@@ -219,15 +234,23 @@ ORDEN: ${text}`;
         sessionId = freshState.activeTestSessionId;
         aiInput = `${sysRules}
 
-=== CONTINUANDO TEST ===
-USA SOLO ESTE TEXTO (ningún otro):
+=== RESPUESTA Y SIGUIENTE PREGUNTA ===
+USA SOLO ESTE TEXTO DE LA LECCIÓN:
 """
 ${freshState.activeTestContent}
 """
-Da feedback breve a la respuesta del alumno y envía la SIGUIENTE pregunta.
-Tras la 5ª escribe [[COMPLETADO]].
 
-RESPUESTA DEL ALUMNO: ${text}`;
+REGLAS OBLIGATORIAS DE FORMATO:
+1. Da feedback breve a la respuesta del alumno: "${text}".
+2. Redacta la SIGUIENTE pregunta de opción múltiple.
+3. Incluye OBLIGATORIAMENTE 4 opciones etiquetadas a), b), c), d) en líneas separadas.
+Ejemplo:
+a) Opción 1
+b) Opción 2
+c) Opción 3
+d) Opción 4
+
+IMPORTANTE: Tras la 5ª pregunta escribe [[COMPLETADO]].`;
       } else {
         aiInput = `${sysRules}
 

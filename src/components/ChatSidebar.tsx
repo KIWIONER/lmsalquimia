@@ -16,7 +16,7 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlug }) => {
-    const { messages, loading, sendMessage, initChatIfNeeded, addMessage, closeChat } = useChatStore();
+    const { messages, loading, sendMessage, initChatIfNeeded, addMessage, closeChat, isTestActive } = useChatStore();
     const [input, setInput] = useState('');
     const [isAlerting, setIsAlerting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -78,15 +78,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
         if (!text) return [];
         const lines = text.split('\n');
         const options: Array<{ id: string; text: string; full: string }> = [];
-        const optionRegex = /^([a-d])[\.\)]\s*(.*)/i;
+        const optionRegex = /^[\*\_\s]*([a-d])[\.\)\:-]\s*(.*)/i;
         
         lines.forEach((line: string) => {
-            const match = line.trim().match(optionRegex);
+            const cleanLine = line.trim();
+            const match = cleanLine.match(optionRegex);
             if (match) {
                 options.push({
                     id: match[1].toLowerCase(),
-                    text: match[2].trim(),
-                    full: line.trim()
+                    text: match[2].replace(/[\*\_]+$/g, '').trim(),
+                    full: cleanLine
                 });
             }
         });
@@ -209,7 +210,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                         let displayContent = msg.content;
                                         if (isInteractive) {
                                             displayContent = msg.content.split('\n')
-                                                .filter(line => !line.trim().match(/^([a-d])\)\s*(.*)/i))
+                                                .filter(line => !line.trim().match(/^[\*\_\s]*([a-d])[\.\)\:-]\s*(.*)/i))
                                                 .join('\n');
                                         }
 
@@ -234,7 +235,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                                     </ReactMarkdown>
                                                 </div>
                                                 
-                                                {/* BOTONES INTERACTIVOS */}
+                                                {/* BOTONES INTERACTIVOS A/B/C/D */}
                                                 {isInteractive && (
                                                     <div className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                                         {options.map((opt) => (
@@ -247,6 +248,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                                                 <span className="flex-1 leading-tight">{opt.text}</span>
                                                             </button>
                                                         ))}
+                                                    </div>
+                                                )}
+
+                                                {/* BOTÓN SIGUIENTE PREGUNTA (Si el test está activo y no hay opciones a/b/c/d en pantalla) */}
+                                                {isTestActive && !isInteractive && !loading && i === messages.length - 1 && (
+                                                    <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                        <button
+                                                            onClick={() => sendMessage('Siguiente pregunta', { isTestContinuation: true })}
+                                                            className="w-full py-2.5 px-4 rounded-xl bg-medical-green-500 hover:bg-medical-green-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                                                        >
+                                                            <span>Siguiente Pregunta</span>
+                                                            <span>→</span>
+                                                        </button>
                                                     </div>
                                                 )}
                                             </>
