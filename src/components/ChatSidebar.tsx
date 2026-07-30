@@ -98,9 +98,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
     const handleOptionSelect = (msgIndex: number, option: { id: string; text: string }) => {
         if (loading) return;
         
+        // Guardar la opción pulsada asociada al índice del mensaje en el historial
         setSelectedOptions(prev => ({ ...prev, [msgIndex]: option.id }));
         
-        const responseText = `Mi respuesta es la ${option.id}: ${option.text}`;
+        const responseText = `Opción seleccionada: ${option.id}) ${option.text}`;
         
         const currentPath = window.location.pathname;
         const toKebabCase = (str: string) =>
@@ -227,12 +228,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                         const selectedOptId = selectedOptions[i];
                                         const isInteractive = msg.role === 'assistant' && options.length > 0;
 
-                                        // Averiguar si la respuesta dada en este mensaje o el siguiente fue correcta o incorrecta
-                                        const nextMsgText = messages[i + 1]?.content || messages[i + 2]?.content || '';
+                                        // Buscar la respuesta inmediatamente posterior dada por la IA a esta pregunta
+                                        const subsequentMessages = messages.slice(i + 1);
+                                        const aiResponseMsg = subsequentMessages.find(m => m.role === 'assistant');
+                                        const aiResponseText = aiResponseMsg?.content || '';
+                                        const nextMsgText = aiResponseText;
+
+                                        // Extraer la opción correcta devuelta por la IA (p. ej: [[CORRECTA: A]])
+                                        const correctMatch = aiResponseText.match(/\[\[\s*CORRECTA\s*:\s*([a-d])\s*\]\]/i);
+                                        const correctOptId = correctMatch ? correctMatch[1].toLowerCase() : null;
+
+                                        // Es correcto si las letras coinciden o si la respuesta contiene confirmación afirmativa
                                         const isCorrect = Boolean(
-                                            nextMsgText && 
-                                            /correcta|excelente|acierto|¡exacto|muy bien|es la correcta/i.test(nextMsgText) &&
-                                            !/no es (la|correcto|correcta)|incorrecta|sin embargo/i.test(nextMsgText)
+                                            aiResponseText && (
+                                                correctOptId 
+                                                    ? selectedOptId === correctOptId 
+                                                    : /✅|¡correcto!|es correcta|muy bien|acierto/i.test(aiResponseText)
+                                            )
                                         );
 
                                         // Limpiamos el contenido si hay botones interactivos para no duplicar información
@@ -268,49 +280,64 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                                 {isInteractive && (
                                                     <div className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                                         {options.map((opt) => {
-                                                            const isSelected = selectedOptId === opt.id;
-                                                            const isAnswered = Boolean(selectedOptId);
+                                                             const isSelected = selectedOptId === opt.id;
+                                                             const isAnswered = Boolean(selectedOptId);
 
-                                                            let buttonStyle = 'bg-white border-slate-200 text-slate-700 hover:border-medical-green-500 hover:bg-medical-green-50';
-                                                            let badgeStyle = 'bg-slate-100 text-slate-400 group-hover:bg-medical-green-500 group-hover:text-white';
-                                                            let icon = null;
+                                                             // Extraer la letra de la opción correcta de la respuesta de la IA (p. ej: [[CORRECTA: B]])
+                                                             const correctMatch = nextMsgText.match(/\[\[\s*CORRECTA\s*:\s*([a-d])\s*\]\]/i);
+                                                             const correctOptId = correctMatch ? correctMatch[1].toLowerCase() : null;
+                                                             const isThisTheCorrectOption = !isCorrect && isAnswered && correctOptId === opt.id;
 
-                                                            if (isSelected) {
-                                                                if (!nextMsgText) {
-                                                                    // Mientras se procesa la respuesta
-                                                                    buttonStyle = 'bg-medical-green-50 border-medical-green-500 text-medical-green-900 font-bold ring-2 ring-medical-green-500/20 animate-pulse';
-                                                                    badgeStyle = 'bg-medical-green-500 text-white';
-                                                                } else if (isCorrect) {
-                                                                    // Respuesta correcta
-                                                                    buttonStyle = 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold shadow-md';
-                                                                    badgeStyle = 'bg-emerald-600 text-white';
-                                                                    icon = <CheckCircle size={16} className="text-emerald-600 shrink-0 ml-auto" />;
-                                                                } else {
-                                                                    // Respuesta incorrecta
-                                                                    buttonStyle = 'bg-rose-50 border-rose-400 text-rose-900 font-bold shadow-md';
-                                                                    badgeStyle = 'bg-rose-600 text-white';
-                                                                    icon = <XCircle size={16} className="text-rose-600 shrink-0 ml-auto" />;
-                                                                }
-                                                            } else if (isAnswered) {
-                                                                buttonStyle = 'bg-slate-50/50 border-slate-100 text-slate-400 opacity-60 pointer-events-none';
-                                                                badgeStyle = 'bg-slate-100 text-slate-300';
-                                                            }
+                                                             let buttonStyle = 'bg-white border-slate-200 text-slate-700 hover:border-medical-green-500 hover:bg-medical-green-50';
+                                                             let badgeStyle = 'bg-slate-100 text-slate-400 group-hover:bg-medical-green-500 group-hover:text-white';
+                                                             let icon = null;
 
-                                                            return (
-                                                                <button
-                                                                    key={opt.id}
-                                                                    disabled={isAnswered || loading}
-                                                                    onClick={() => handleOptionSelect(i, opt)}
-                                                                    className={`w-full text-left p-3 rounded-xl border transition-all text-xs font-medium shadow-sm group flex gap-3 items-center ${buttonStyle}`}
-                                                                >
-                                                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold transition-colors uppercase shrink-0 ${badgeStyle}`}>
-                                                                        {opt.id}
-                                                                    </span>
-                                                                    <span className="flex-1 leading-tight">{opt.text}</span>
-                                                                    {icon}
-                                                                </button>
-                                                            );
-                                                        })}
+                                                             if (isSelected) {
+                                                                 if (!nextMsgText) {
+                                                                     // Mientras se procesa la respuesta
+                                                                     buttonStyle = 'bg-medical-green-50 border-medical-green-500 text-medical-green-900 font-bold ring-2 ring-medical-green-500/20 animate-pulse';
+                                                                     badgeStyle = 'bg-medical-green-500 text-white';
+                                                                 } else if (isCorrect) {
+                                                                     // Respuesta correcta elegida
+                                                                     buttonStyle = 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold shadow-md ring-2 ring-emerald-500/20';
+                                                                     badgeStyle = 'bg-emerald-600 text-white';
+                                                                     icon = <CheckCircle size={16} className="text-emerald-600 shrink-0 ml-auto" />;
+                                                                 } else {
+                                                                     // Respuesta incorrecta elegida
+                                                                     buttonStyle = 'bg-rose-50 border-rose-400 text-rose-900 font-bold shadow-md ring-2 ring-rose-400/20';
+                                                                     badgeStyle = 'bg-rose-600 text-white';
+                                                                     icon = <XCircle size={16} className="text-rose-600 shrink-0 ml-auto" />;
+                                                                 }
+                                                             } else if (isThisTheCorrectOption) {
+                                                                 // Opción correcta resaltada (Highlight en Verde) junto a la respuesta fallada
+                                                                 buttonStyle = 'bg-emerald-50/90 border-emerald-500 text-emerald-900 font-bold shadow-md ring-2 ring-emerald-500/30 animate-in fade-in duration-300';
+                                                                 badgeStyle = 'bg-emerald-600 text-white';
+                                                                 icon = (
+                                                                     <div className="flex items-center gap-1.5 ml-auto shrink-0">
+                                                                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Correcta</span>
+                                                                         <CheckCircle size={16} className="text-emerald-600" />
+                                                                     </div>
+                                                                 );
+                                                             } else if (isAnswered) {
+                                                                 buttonStyle = 'bg-slate-50/50 border-slate-100 text-slate-400 opacity-60 pointer-events-none';
+                                                                 badgeStyle = 'bg-slate-100 text-slate-300';
+                                                             }
+
+                                                             return (
+                                                                 <button
+                                                                     key={opt.id}
+                                                                     disabled={isAnswered || loading}
+                                                                     onClick={() => handleOptionSelect(i, opt)}
+                                                                     className={`w-full text-left p-3 rounded-xl border transition-all text-xs font-medium shadow-sm group flex gap-3 items-center ${buttonStyle}`}
+                                                                 >
+                                                                     <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold transition-colors uppercase shrink-0 ${badgeStyle}`}>
+                                                                         {opt.id}
+                                                                     </span>
+                                                                     <span className="flex-1 leading-tight">{opt.text}</span>
+                                                                     {icon}
+                                                                 </button>
+                                                             );
+                                                         })}
                                                     </div>
                                                 )}
 

@@ -158,7 +158,13 @@ const SortableCard = React.forwardRef<HTMLDivElement, any>(({ t, index, selected
                         {previewModes[t.id] ? (
                             <div className="prose prose-slate max-w-none card-preview"><ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>{t.contenido}</ReactMarkdown></div>
                         ) : (
-                            <RichCardEditor content={t.contenido} onChange={(val: string) => updateLocalTarjeta(t.id, { contenido: val })} onFocus={() => setSelectedCardId(t.id)} />
+                            <RichCardEditor 
+                                content={t.contenido} 
+                                onChange={(val: string) => updateLocalTarjeta(t.id, { contenido: val })} 
+                                onFocus={() => setSelectedCardId(t.id)} 
+                                activeEditorRef={activeEditorRef}
+                                setActiveEditorState={setActiveEditorState}
+                            />
                         )}
                     </div>
                 )}
@@ -744,12 +750,12 @@ const DocumentEditor = () => {
         <AdminProtectedRoute>
             <div className="flex flex-col h-full w-full bg-[#fcfcfc] overflow-hidden text-slate-900 font-sans">
             {/* CABECERA GLOBAL INTEGRADA */}
-            <header className="h-20 border-b border-slate-100 bg-white flex items-center px-10 justify-between shrink-0 z-[110] shadow-sm sticky top-0">
+            <header className="h-16 border-b border-slate-100 bg-white flex items-center px-8 justify-between shrink-0 z-[110] shadow-xs sticky top-0">
                 <div className="flex items-center gap-6">
                     <a href="/dashboard" className="flex items-center gap-4 group/back">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-3xl shadow-sm group-hover/back:scale-110 transition-all">🏺</div>
+                        <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shadow-sm group-hover/back:scale-110 transition-all">🏺</div>
                         <div className="flex flex-col">
-                            <h1 className="font-extrabold text-lg tracking-tight text-slate-800 leading-none">Admin <span className="text-medical-green-500 italic">Editor</span></h1>
+                            <h1 className="font-extrabold text-base tracking-tight text-slate-800 leading-none">Admin <span className="text-medical-green-500 italic">Editor</span></h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                                 <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">En línea</span>
@@ -758,59 +764,15 @@ const DocumentEditor = () => {
                     </a>
                 </div>
 
-                {/* TEXT TOOLS - CENTRADOS */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-50/80 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-100">
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBold().run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive('bold') ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-white text-slate-500 font-bold'}`}>B</button>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleItalic().run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive('italic') ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-white text-slate-500 italic font-serif text-lg'}`}>I</button>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleHeading({ level: 3 }).run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive('heading', { level: 3 }) ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-white text-slate-500 font-black text-[11px]'}`}>H3</button>
-                     <div className="w-px h-5 bg-slate-200 mx-1.5"></div>
-                     <button onClick={handleUpdateIndex} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-white hover:text-medical-green-600 transition-all border border-transparent hover:border-slate-100" title="Actualizar Índice">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                        Índice
-                     </button>
-                     <div className="w-px h-5 bg-slate-200 mx-1.5"></div>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBulletList().run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive('bulletList') ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-white text-slate-500'}`}><svg className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleOrderedList().run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive('orderedList') ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-white text-slate-500'}`}><svg className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M7 6h13M7 12h13M7 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg></button>
-                     <div className="w-px h-5 bg-slate-200 mx-1.5"></div>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().setTextAlign('left').run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive({ textAlign: 'left' }) ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-white text-slate-500'}`}><svg className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M4 12h10M4 18h16" /></svg></button>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().setTextAlign('center').run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive({ textAlign: 'center' }) ? 'bg-slate-900 text-white shadow-lg' : 'hover:bg-white text-slate-500'}`}><svg className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M7 12h10M4 18h16" /></svg></button>
-                     <div className="w-px h-5 bg-slate-200 mx-1.5"></div>
-                     
-                     {/* TABLAS - CONTEXTUAL */}
-                     <div className="relative flex items-center gap-1">
-                        <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().insertTable({ rows: 2, cols: 3 }).run(); }} className={`w-10 h-10 rounded-xl transition-all ${activeEditorState?.isActive('table') ? 'bg-medical-green-500 text-white shadow-lg' : 'hover:bg-white text-slate-500'}`} title="Insertar Tabla">
-                            <svg className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M3 10h18M3 14h18m-9-4v8" /></svg>
-                        </button>
-                        
-                        {activeEditorState?.isActive('table') && (
-                            <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-300 ml-1 border-l border-slate-200 pl-2">
-                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().addRowAfter().run(); }} className="w-8 h-8 rounded-lg hover:bg-white text-slate-400 hover:text-medical-green-600 transition-all flex items-center justify-center" title="Añadir Fila">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M3 12h18M12 3v18" /></svg>
-                                </button>
-                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().addColumnAfter().run(); }} className="w-8 h-8 rotate-90 rounded-lg hover:bg-white text-slate-400 hover:text-medical-green-600 transition-all flex items-center justify-center" title="Añadir Columna">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M3 12h18M12 3v18" /></svg>
-                                </button>
-                                <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().deleteRow().run(); }} className="w-8 h-8 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all flex items-center justify-center" title="Borrar Fila">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().deleteTable().run(); }} className="w-8 h-8 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all flex items-center justify-center" title="Eliminar Tabla">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
-                            </div>
-                        )}
-                     </div>
-                </div>
-
                 {/* ACCIONES Y ESTADO - DERECHA */}
-                <div className="flex items-center gap-4">
-                    <button onClick={handleAddCard} className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-md">
+                <div className="flex items-center gap-3">
+                    <button onClick={handleAddCard} className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-md">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M12 4v16m8-8H4" /></svg>
                         NUEVA
                     </button>
 
                     <div className="relative">
-                        <button onClick={() => setToolsMenuOpen(!toolsMenuOpen)} className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all ${toolsMenuOpen ? 'bg-medical-green-500 text-white border-medical-green-500' : 'bg-white text-medical-green-600 border-medical-green-100 hover:border-medical-green-500'}`}>
+                        <button onClick={() => setToolsMenuOpen(!toolsMenuOpen)} className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all ${toolsMenuOpen ? 'bg-medical-green-500 text-white border-medical-green-500' : 'bg-white text-medical-green-600 border-medical-green-100 hover:border-medical-green-500'}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                             IA
                         </button>
@@ -854,7 +816,7 @@ const DocumentEditor = () => {
                         </svg>
                         <span>Calendario</span>
                     </a>
-                    <button onClick={handleManualSave} className="bg-medical-green-600 text-white px-6 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-medical-green-700 shadow-md active:scale-95 transition-all">GUARDAR</button>
+                    <button onClick={handleManualSave} className="bg-medical-green-600 text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-medical-green-700 shadow-md active:scale-95 transition-all">GUARDAR</button>
                     
                     <button 
                         onClick={handleLogout}
@@ -864,12 +826,74 @@ const DocumentEditor = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover/logout:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </button>
                     
-                    <div className="flex flex-col items-center justify-center border-l border-slate-100 pl-4">
-                        <span className={`w-3 h-3 rounded-full ${saveStatus === 'saving' ? 'bg-orange-500 animate-pulse' : saveStatus === 'saved' ? 'bg-medical-green-500' : 'bg-slate-200 shadow-inner'}`} />
-                        <span className="text-[7px] font-bold uppercase text-slate-400 tracking-[0.2em] mt-1">Sync</span>
+                    <div className="flex flex-col items-center justify-center border-l border-slate-100 pl-3">
+                        <span className={`w-2.5 h-2.5 rounded-full ${saveStatus === 'saving' ? 'bg-orange-500 animate-pulse' : saveStatus === 'saved' ? 'bg-medical-green-500' : 'bg-slate-200 shadow-inner'}`} />
+                        <span className="text-[7px] font-bold uppercase text-slate-400 tracking-[0.2em] mt-0.5">Sync</span>
                     </div>
                 </div>
             </header>
+
+            {/* NAVEGADOR HORIZONTAL DEDICADO PARA FORMATO DE TEXTO */}
+            <div className="h-13 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur-md flex items-center px-6 justify-center shrink-0 z-[105] shadow-xs">
+                <div className="flex items-center gap-1 bg-white/90 p-1 rounded-2xl border border-slate-200/80 shadow-sm overflow-x-auto custom-scrollbar max-w-full">
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBold().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('bold') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-bold'}`} title="Negrita (B)">B</button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleItalic().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('italic') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 italic font-serif text-base'}`} title="Cursiva (I)">I</button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleHeading({ level: 3 }).run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('heading', { level: 3 }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-black text-[11px]'}`} title="Encabezado H3">H3</button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleHighlight().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('highlight') ? 'bg-yellow-400 text-slate-900 shadow-md font-bold' : 'hover:bg-slate-100 text-slate-600'}`} title="Resaltado amarillo">✨</button>
+                     
+                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                     
+                     <button onClick={handleUpdateIndex} className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-100 hover:text-medical-green-600 transition-all border border-transparent" title="Actualizar Índice">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                        Índice
+                     </button>
+                     
+                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                     
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBulletList().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('bulletList') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Lista de Viñetas"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleOrderedList().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('orderedList') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Lista Numerada"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M7 6h13M7 12h13M7 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg></button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBlockquote().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('blockquote') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-serif text-lg font-bold'}`} title="Cita en Bloque">”</button>
+                     
+                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                     
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().setTextAlign('left').run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive({ textAlign: 'left' }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Alinear a la Izquierda"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M4 12h10M4 18h16" /></svg></button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().setTextAlign('center').run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive({ textAlign: 'center' }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Alinear al Centro"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M7 12h10M4 18h16" /></svg></button>
+                     
+                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                     
+                     {/* TABLAS - CONTEXTUAL */}
+                     <div className="relative flex items-center gap-1">
+                        <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().insertTable({ rows: 2, cols: 3 }).run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('table') ? 'bg-medical-green-500 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Insertar Tabla">
+                            <svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M3 10h18M3 14h18m-9-4v8" /></svg>
+                        </button>
+                        
+                        {activeEditorState?.isActive('table') && (
+                            <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-300 ml-1 border-l border-slate-200 pl-1.5">
+                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().addRowAfter().run(); }} className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-medical-green-600 transition-all flex items-center justify-center" title="Añadir Fila">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M3 12h18M12 3v18" /></svg>
+                                </button>
+                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().addColumnAfter().run(); }} className="w-7 h-7 rotate-90 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-medical-green-600 transition-all flex items-center justify-center" title="Añadir Columna">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M3 12h18M12 3v18" /></svg>
+                                </button>
+                                <div className="w-px h-3.5 bg-slate-200 mx-0.5"></div>
+                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().deleteRow().run(); }} className="w-7 h-7 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center" title="Borrar Fila">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().deleteTable().run(); }} className="w-7 h-7 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center" title="Eliminar Tabla">
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        )}
+                     </div>
+
+                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
+
+                     {/* LIMPIAR FORMATO / DESHACER / REHACER */}
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().unsetAllMarks().clearNodes().run(); }} className="w-8 h-8 rounded-xl hover:bg-slate-100 text-slate-500 transition-all" title="Limpiar todo el formato">🧹</button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().undo().run(); }} className="w-8 h-8 rounded-xl hover:bg-slate-100 text-slate-500 transition-all font-bold text-xs" title="Deshacer (Ctrl+Z)">↩️</button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().redo().run(); }} className="w-8 h-8 rounded-xl hover:bg-slate-100 text-slate-500 transition-all font-bold text-xs" title="Rehacer (Ctrl+Y)">↪️</button>
+                </div>
+            </div>
 
             <div className="flex flex-1 overflow-hidden">
                 {/* PANEL 1: NAV (RESIZABLE) */}
@@ -1262,10 +1286,16 @@ const DocumentEditor = () => {
                 
                 /* List & Paragraph Styles for Preview */
                 .card-preview p { margin-bottom: 1.25rem; font-size: 1rem; color: #334155; line-height: 1.7; }
+                .card-preview h3 { font-size: 1.3rem; font-weight: 700; margin: 1.5rem 0 0.75rem; color: #1e293b; letter-spacing: -0.01em; }
                 .card-preview strong { color: #0f172a; font-weight: 700; }
+                .card-preview mark { background-color: #fef08a; border-radius: 4px; padding: 2px 6px; font-weight: 600; color: #854d0e; }
+                .card-preview blockquote { border-left: 4px solid #10b981; padding-left: 1rem; margin: 1.25rem 0; font-style: italic; color: #475569; background: #f8fafc; padding-top: 0.5rem; padding-bottom: 0.5rem; border-radius: 0 8px 8px 0; }
                 .card-preview ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1.25rem !important; }
                 .card-preview ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin-bottom: 1.25rem !important; }
                 .card-preview li { font-size: 0.95rem; color: #475569; margin-bottom: 0.4rem; display: list-item !important; }
+                .card-preview table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; }
+                .card-preview th, .card-preview td { border: 1px solid #e2e8f0; padding: 10px 14px; font-size: 0.85rem; }
+                .card-preview th { font-weight: 700; background-color: #f1f5f9; color: #1e293b; text-transform: uppercase; letter-spacing: 0.04em; }
             ` 
         }} />
         {/* Modal de Prompt (Sustituto de window.prompt) mediante Portal */}

@@ -17,9 +17,18 @@ interface RichCardEditorProps {
     onChange?: (html: string) => void;
     onFocus?: () => void;
     placeholder?: string;
+    activeEditorRef?: React.MutableRefObject<any>;
+    setActiveEditorState?: (editor: any) => void;
 }
 
-const RichCardEditor: React.FC<RichCardEditorProps> = ({ content, onChange, onFocus, placeholder = 'Escribe aquí...' }) => {
+const RichCardEditor: React.FC<RichCardEditorProps> = ({ 
+    content, 
+    onChange, 
+    onFocus, 
+    placeholder = 'Escribe aquí...',
+    activeEditorRef,
+    setActiveEditorState
+}) => {
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -43,8 +52,18 @@ const RichCardEditor: React.FC<RichCardEditorProps> = ({ content, onChange, onFo
             const md = (editor.storage as any).markdown?.getMarkdown() || editor.getHTML();
             if (onChange) onChange(md);
         },
-        onFocus: () => {
+        onFocus: ({ editor }) => {
+            if (activeEditorRef) activeEditorRef.current = editor;
+            if (setActiveEditorState) setActiveEditorState(editor);
             if (onFocus) onFocus();
+        },
+        onSelectionUpdate: ({ editor }) => {
+            if (setActiveEditorState) setActiveEditorState(editor);
+        },
+        onTransaction: ({ editor }) => {
+            if (setActiveEditorState && activeEditorRef?.current === editor) {
+                setActiveEditorState(editor);
+            }
         }
     });
 
@@ -57,6 +76,14 @@ const RichCardEditor: React.FC<RichCardEditorProps> = ({ content, onChange, onFo
             }
         }
     }, [content, editor]);
+
+    // Establecer como editor activo si no hay ninguno
+    useEffect(() => {
+        if (editor && activeEditorRef && !activeEditorRef.current) {
+            activeEditorRef.current = editor;
+            if (setActiveEditorState) setActiveEditorState(editor);
+        }
+    }, [editor, activeEditorRef, setActiveEditorState]);
 
     if (!editor) return null;
 
@@ -71,6 +98,7 @@ const RichCardEditor: React.FC<RichCardEditorProps> = ({ content, onChange, onFo
                 .tiptap ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.25rem; }
                 .tiptap li { font-size: 0.95rem; color: #475569; margin-bottom: 0.4rem; }
                 .tiptap mark { background-color: #fef08a; border-radius: 2px; padding: 0 2px; }
+                .tiptap blockquote { border-left: 4px solid #10b981; padding-left: 1rem; margin: 1.25rem 0; font-style: italic; color: #475569; background-color: #f8fafc; padding-top: 0.5rem; padding-bottom: 0.5rem; border-radius: 0 8px 8px 0; }
                 .tableWrapper { overflow-x: auto; margin: 1.5rem 0; }
                 .tiptap table { border-collapse: collapse; width: 100%; overflow: hidden; border-radius: 8px; border: 1px solid #e2e8f0; }
                 .tiptap thead { background-color: #f1f5f9; }

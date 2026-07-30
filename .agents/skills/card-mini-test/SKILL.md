@@ -16,8 +16,21 @@ Permitir al estudiante autoevaluar su comprensión de una tarjeta específica me
 
 ## 📋 2. Reglas Invariantes del Prompt
 
-Cualquier invocación de mini-test generada por esta Skill **DEBE** utilizar la plantilla de reglas estricta definida en:
-👉 [resources/prompt_template.txt](resources/prompt_template.txt)
+Cualquier invocación de mini-test generada por esta Skill **DEBE** utilizar plantillas estrictas según la etapa del flujo:
+- **Para iniciar el test (Pregunta 1):** 👉 [resources/prompt_template.txt](resources/prompt_template.txt)
+- **Para evaluar respuestas y continuar (Preguntas 2-5):** 👉 [resources/evaluation_template.txt](resources/evaluation_template.txt)
+
+### Control de Bucle (5 Preguntas Estrictas):
+- El gestor de estado (`chatStore.ts`) mantiene el contador `testQuestionCount` (1 a 5).
+- Al llegar a la **Pregunta 5/5**, el prompt fuerza la instrucción explícita a la IA: *"ESTA ES LA PREGUNTA 5 DE 5. Muestra la pregunta e incluye obligatoriamente la etiqueta [[COMPLETADO]]"*.
+- Esta regla aplica **únicamente a los mini-tests de las tarjetas de lección**, sin afectar el módulo general de evaluación.
+
+### Evaluador Estricto & Resaltado de Respuesta Correcta:
+- La IA evalúa la opción elegida contra el contenido de la tarjeta como **verdad absoluta**.
+- **Respuesta Correcta (✅)**: Si el alumno acierta, se marca la tarjeta elegida en **Verde (Emerald)**.
+- **Respuesta Incorrecta (❌)**: Si el alumno falla, la opción elegida se marca en **Rojo (Rose)** y simultáneamente la opción correcta se **resalta en Verde (Emerald)** con una insignia `"Correcta"` al lado para mostrar inmediatamente cuál era la respuesta acertada.
+
+
 
 
 ---

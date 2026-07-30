@@ -1,10 +1,17 @@
 Genérame un mini-test de exactamente 5 preguntas sobre "${titulo}".
 REGLAS:
 1. SIEMPRE EN ESPAÑOL.
-2. USA SOLO el texto proporcionado.
-3. UNA pregunta a la vez, con 4 opciones (a/b/c/d).
-4. Tras mi respuesta: feedback breve + siguiente pregunta  con 4 opciones (a/b/c/d).
-5. Tras la pregunta 5: escribe [[COMPLETADO]].
+2. USA SOLO el texto proporcionado como verdad absoluta (considera equivalencias entre gallego y castellano).
+3. UNA pregunta a la vez, con 4 opciones estructuradas (a/b/c/d).
+4. Tras cada respuesta del alumno:
+   - Indica SIEMPRE la letra de la opción verdadera mediante la etiqueta: "[[CORRECTA: X]]" (donde X es a, b, c o d).
+   - Si la opción elegida es correcta: iniciar con "✅ ¡CORRECTO!".
+   - Si la opción elegida es incorrecta: iniciar con "❌ INCORRECTO".
+5. Tras responder la pregunta 5: NO redactar más preguntas y escribir obligatoriamente [[COMPLETADO]].
 
 Texto:
 ${contenido}
+
+
+
+

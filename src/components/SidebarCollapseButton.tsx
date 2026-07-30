@@ -12,14 +12,15 @@ interface SidebarCollapseButtonProps {
 const SidebarCollapseButton: React.FC<SidebarCollapseButtonProps> = ({ hideButton = false }) => {
     const { isLeftSidebarOpen, toggleLeftSidebar } = useUIStore();
     const pathname = usePathname();
-    const isAdmin = pathname?.startsWith('/admin');
+    const isHiddenRoute = pathname?.startsWith('/admin') || pathname?.startsWith('/leccion');
 
     useEffect(() => {
         const sidebar = document.getElementById('primary-sidebar');
         if (sidebar) {
-            if (isAdmin) {
+            if (isHiddenRoute) {
                 sidebar.style.display = 'none';
             } else {
+
                 sidebar.style.display = '';
                 if (isLeftSidebarOpen) {
                     sidebar.style.width = '360px';
@@ -32,9 +33,9 @@ const SidebarCollapseButton: React.FC<SidebarCollapseButtonProps> = ({ hideButto
                 }
             }
         }
-    }, [isLeftSidebarOpen, isAdmin]);
+    }, [isLeftSidebarOpen, isHiddenRoute]);
 
-    if (hideButton || isAdmin) return null;
+    if (hideButton || isHiddenRoute) return null;
 
     return (
         <button 

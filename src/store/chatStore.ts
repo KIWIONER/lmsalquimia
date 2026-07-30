@@ -25,6 +25,7 @@ export interface ChatState {
   activeTestContent: string;
   activeTestSessionId: string | null;
   activeTestingCardId: string | null;
+  testQuestionCount: number;
   completedCardIds: string[];
   summarizedCardIds: string[];
   cardHighlights: Record<string, string[]>;
@@ -56,6 +57,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeTestContent: '',
   activeTestSessionId: null,
   activeTestingCardId: null,
+  testQuestionCount: 0,
   completedCardIds: [],
 
   // ── Estado de Resúmenes ──
@@ -89,6 +91,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isTestActive: false,
         activeTestSessionId: null,
         activeTestingCardId: null,
+        testQuestionCount: 0,
         completedCardIds: cardToMark
           ? [...new Set([...state.completedCardIds, cardToMark])]
           : state.completedCardIds,
@@ -137,8 +140,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isTestActive: true,
         activeTestSessionId: testSessionId,
         activeTestingCardId: context.targetBlockId || null,
+        testQuestionCount: 1,
       });
       if (context.blockContent) get().setActiveTestContent(context.blockContent);
+    } else if (get().isTestActive) {
+      set((state) => ({ testQuestionCount: state.testQuestionCount + 1 }));
     }
 
     openChat();
@@ -159,7 +165,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     setLoading(true);
 
-    const freshState = get();
+    const freshStateUpdated = get();
+    const currentQuestionNum = freshStateUpdated.testQuestionCount;
 
     // ── Construcción del prompt ──
     const sysRules = `Eres "Cerebro", tutor experto de Alquimia LMS.
@@ -170,18 +177,18 @@ REGLAS: No inventes nada. Usa solo el contenido proporcionado. Formato Markdown 
     let sessionId = context.sessionId || 'estudiante-demo';
 
     if (isTestRequest) {
-      sessionId = freshState.activeTestSessionId || `test-${Date.now()}`;
+      sessionId = freshStateUpdated.activeTestSessionId || `test-${Date.now()}`;
       aiInput = `${sysRules}
 
 === MODO TEST (PREGUNTA 1/5) ===
-USA SOLO ESTE TEXTO DE LA LECCIÓN (ningún otro):
+USA SOLO ESTE TEXTO DE LA LECCIÓN COMO VERDAD ABSOLUTA (considera equivalencias entre gallego y castellano):
 """
 ${context.blockContent}
 """
 
 REGLAS OBLIGATORIAS DE FORMATO:
-1. Redacta la pregunta 1 sobre el texto.
-2. Incluye OBLIGATORIAMENTE 4 opciones etiquetadas a), b), c), d) en líneas separadas.
+1. Redacta la pregunta 1 de 5 sobre el texto en CASTELLANO.
+2. Incluye OBLIGATORIAMENTE 4 opciones estructuradas a), b), c), d) en líneas separadas.
 Ejemplo:
 a) Primera opción
 b) Segunda opción
@@ -189,26 +196,43 @@ c) Tercera opción
 d) Cuarta opción
 
 ORDEN: ${text}`;
-    } else if (isTestContinuation) {
-      sessionId = freshState.activeTestSessionId || `test-resume-${Date.now()}`;
+    } else if (context.isOptionSelect || isTestContinuation) {
+      sessionId = freshStateUpdated.activeTestSessionId || `test-resume-${Date.now()}`;
+      
+      const title = currentQuestionNum > 5 
+        ? '=== EVALUACIÓN DE LA PREGUNTA 5 Y FINALIZACIÓN DEL TEST ==='
+        : `=== EVALUACIÓN DE LA PREGUNTA ${currentQuestionNum - 1} Y CREACIÓN DE LA PREGUNTA ${currentQuestionNum} ===`;
+
+      const lastAssistantMsg = [...freshStateUpdated.messages].reverse().find(m => m.role === 'assistant');
+      const previousQuestionText = lastAssistantMsg ? lastAssistantMsg.content : "Pregunta previa no encontrada.";
+
       aiInput = `${sysRules}
 
-=== CONTINUANDO TEST ===
-USA SOLO ESTE TEXTO DE LA LECCIÓN (ningún otro):
+${title}
+USA SOLO ESTE TEXTO DE LA LECCIÓN COMO VERDAD ABSOLUTA (considera equivalencias entre gallego y castellano):
 """
-${freshState.activeTestContent}
+${freshStateUpdated.activeTestContent}
 """
 
-REGLAS OBLIGATORIAS DE FORMATO:
-1. Redacta la SIGUIENTE pregunta de autoevaluación.
-2. Incluye OBLIGATORIAMENTE 4 opciones etiquetadas a), b), c), d) en líneas separadas.
-Ejemplo:
-a) Primera opción
-b) Segunda opción
-c) Tercera opción
-d) Cuarta opción
+PREGUNTA FORMULADA AL ALUMNO:
+"""
+${previousQuestionText}
+"""
 
-Tras la 5ª pregunta escribe [[COMPLETADO]].`;
+RESPUESTA SELECCIONADA POR EL ALUMNO: "${text}"
+
+REGLAS OBLIGATORIAS DE EVALUACIÓN PASO A PASO:
+1. PASO 1 (Verificación): Analiza la "Opción seleccionada" por el alumno comparándola con la PREGUNTA FORMULADA y el TEXTO DE LA LECCIÓN. ¿Esta opción responde correctamente a la pregunta?
+2. PASO 2 (Veredicto): 
+   - Si la opción elegida por el alumno es INCORRECTA o no coincide con la verdad del texto: Escribe obligatoriamente en la primera línea "❌ INCORRECTO" seguido de un salto de línea. Luego explica brevemente el error y cuál era la correcta.
+   - Si la opción elegida por el alumno es CORRECTA: Escribe obligatoriamente en la primera línea "✅ ¡CORRECTO!" seguido de un salto de línea.
+3. PASO 3 (Etiqueta Obligatoria): Escribe SIEMPRE en una nueva línea la etiqueta "[[CORRECTA: X]]" (sustituyendo X por la letra real a, b, c o d de la respuesta correcta).
+4. PASO 4 (Siguiente paso):
+${
+  currentQuestionNum > 5
+    ? '   - ESTA ES LA EVALUACIÓN FINAL. NO redactes más preguntas. Escribe obligatoriamente al final [[COMPLETADO]].'
+    : `   - Redacta a continuación la PREGUNTA ${currentQuestionNum} DE 5 con sus 4 opciones a), b), c), d) en líneas separadas.`
+}`;
     } else if (isHighlightRequest) {
       aiInput = `${sysRules}
 
@@ -232,41 +256,19 @@ ${context.blockContent}
 
 ORDEN: ${text}`;
     } else {
-      if (freshState.isTestActive && freshState.activeTestSessionId) {
-        sessionId = freshState.activeTestSessionId;
-        aiInput = `${sysRules}
-
-=== RESPUESTA Y SIGUIENTE PREGUNTA ===
-USA SOLO ESTE TEXTO DE LA LECCIÓN:
-"""
-${freshState.activeTestContent}
-"""
-
-REGLAS OBLIGATORIAS DE FORMATO:
-1. Da feedback breve a la respuesta del alumno: "${text}".
-2. Redacta la SIGUIENTE pregunta de opción múltiple.
-3. Incluye OBLIGATORIAMENTE 4 opciones etiquetadas a), b), c), d) en líneas separadas.
-Ejemplo:
-a) Opción 1
-b) Opción 2
-c) Opción 3
-d) Opción 4
-
-IMPORTANTE: Tras la 5ª pregunta escribe [[COMPLETADO]].`;
-      } else {
-        aiInput = `${sysRules}
+      // Chat normal (fuera de test)
+      aiInput = `${sysRules}
 
 Tienes acceso a "obtener-documento-actual" para el slug: "${context.current_slug || ''}".
 
 PREGUNTA: ${text}`;
-      }
     }
 
     try {
       const payload = {
         chatInput: aiInput,
         sessionId,
-        isTestRequest: isTestRequest || freshState.isTestActive,
+        isTestRequest: isTestRequest || freshStateUpdated.isTestActive,
         ...context,
       };
 

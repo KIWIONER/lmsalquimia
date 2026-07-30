@@ -85,6 +85,7 @@ graph TD
 | **Overflow Fix & UI Polish** | Corrección de Overflows en Lección | Eliminación de overflow horizontal mediante breadcrumbs adaptativos en móvil, truncado con `...` y forzado de `break-words` / `hyphens: auto` en H1 de `LessonContentViewer.tsx`. |
 | **29/07/2026** | Vercel React Best Practices Refactoring | Auditoría y refactorización aplicando el skill `vercel-react-best-practices`: eliminación de barrel imports en componentes de lección, renderizado condicional seguro con ternarios booleanos (`? : null`) en `Calendar.tsx` y `GanttTimeline.tsx`, e importaciones directas por subarchivo. Verificación limpia con `npx tsc --noEmit`. |
 | **29/07/2026** | Admin Drill-Down Single Panel | Rediseño completo del panel de administración (`DocumentEditor.tsx`) a **1 solo panel lateral por niveles** (Asignaturas -> Unidades -> Temas) con botones de retorno (`< Asignaturas` / `< Unidades`), migas de pan interactivas y paginación rápida (`< Ant / Sig >`). |
+| **30/07/2026** | Skill Mini-Test: Corrección Motor IA | Solución de 3 bugs críticos de evaluación: (1) Inyección de historial y *Chain-of-Thought* para prevenir alucinaciones de respuestas falsos positivos por pérdida de contexto. (2) Título explícito de prompt para evitar cierres prematuros ignorando la última pregunta. (3) Arreglo de desfase numérico (off-by-one) que saltaba la pregunta 2. |
 
 ---
 

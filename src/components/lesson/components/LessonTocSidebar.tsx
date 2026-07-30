@@ -1,6 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
 import { LessonBlock } from '../hooks/useLessonCards';
-import { CheckCircle, Sparkles, X } from 'lucide-react';
+import { CheckCircle, Sparkles, X, ArrowLeft, Library } from 'lucide-react';
 
 interface LessonTocSidebarProps {
     blocks: LessonBlock[];
@@ -36,22 +37,37 @@ export const LessonTocSidebar: React.FC<LessonTocSidebarProps> = ({
             <aside 
                 className="fixed md:relative inset-y-0 left-0 w-[280px] shrink-0 h-full bg-white border-r border-slate-200 flex flex-col shadow-xl md:shadow-sm z-50 md:z-20 animate-in slide-in-from-left duration-300"
             >
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                {/* Botón para regresar a las asignaturas */}
+                <div className="p-3 border-b border-slate-100 bg-slate-50/80">
+                    <Link
+                        href="/biblioteca"
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:border-medical-green-400 hover:text-medical-green-700 shadow-2xs hover:shadow-xs transition-all group"
+                    >
+                        <div className="flex items-center gap-2">
+                            <ArrowLeft size={14} className="text-slate-400 group-hover:text-medical-green-600 transition-colors" />
+                            <span>Volver a Asignaturas</span>
+                        </div>
+                        <Library size={14} className="text-slate-400 group-hover:text-medical-green-600 transition-colors" />
+                    </Link>
+                </div>
+
+                <div className="p-4 border-b border-slate-100 bg-white flex items-center justify-between">
                     <div>
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Navegación de Lección</span>
-                        <h2 className="text-xs font-bold text-slate-800 mt-0.5 truncate max-w-[190px]">{unitName || 'Contenido'}</h2>
+                        <h2 className="text-xs font-bold text-slate-800 mt-0.5 truncate max-w-[170px]">{unitName || 'Contenido'}</h2>
                         <span className="text-[10px] text-slate-400 font-medium">{blocks.length} Tarjetas</span>
                     </div>
                     {onClose && (
                         <button 
                             onClick={onClose}
-                            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 touch-target"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 touch-target"
                             title="Cerrar índice"
                         >
                             <X size={16} />
                         </button>
                     )}
                 </div>
+
                 
                 <nav className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
                     {blocks.map((b, idx) => {

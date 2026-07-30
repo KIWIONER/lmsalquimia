@@ -8,8 +8,6 @@ import { supabase } from '../lib/supabase';
 
 export default function SidebarHierarchy() {
   const pathname = usePathname();
-  if (pathname?.startsWith('/admin')) return null;
-
   const [modules, setModules] = useState<Module[]>([]);
   const [totalDocs, setTotalDocs] = useState<number>(0);
   const [openModuleIds, setOpenModuleIds] = useState<Record<string, boolean>>({});
@@ -37,8 +35,9 @@ export default function SidebarHierarchy() {
   }, [pathname]);
 
   useEffect(() => {
+    const channelId = `realtime_progress_${Math.random().toString(36).substring(2, 9)}`;
     const channel = supabase
-      .channel('realtime_progress_next')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -70,6 +69,9 @@ export default function SidebarHierarchy() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/leccion')) return null;
+
 
   const toggleModule = (id: string) => {
     setOpenModuleIds((prev) => ({ ...prev, [id]: !prev[id] }));
