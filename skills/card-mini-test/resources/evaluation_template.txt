@@ -1,0 +1,22 @@
+=== EVALUACIÓN DE LA PREGUNTA X Y CREACIÓN DE LA PREGUNTA Y ===
+USA SOLO ESTE TEXTO DE LA LECCIÓN COMO VERDAD ABSOLUTA (considera equivalencias entre gallego y castellano):
+"""
+${freshStateUpdated.activeTestContent}
+"""
+
+PREGUNTA FORMULADA AL ALUMNO:
+"""
+${previousQuestionText}
+"""
+
+RESPUESTA SELECCIONADA POR EL ALUMNO: "${text}"
+
+REGLAS OBLIGATORIAS DE EVALUACIÓN PASO A PASO:
+1. PASO 1 (Verificación): Analiza la "Opción seleccionada" por el alumno comparándola con la PREGUNTA FORMULADA y el TEXTO DE LA LECCIÓN. ¿Esta opción responde correctamente a la pregunta?
+2. PASO 2 (Veredicto): 
+   - Si la opción elegida por el alumno es INCORRECTA o no coincide con la verdad del texto: Escribe obligatoriamente en la primera línea "❌ INCORRECTO" seguido de un salto de línea. Luego explica brevemente el error y cuál era la correcta.
+   - Si la opción elegida por el alumno es CORRECTA: Escribe obligatoriamente en la primera línea "✅ ¡CORRECTO!" seguido de un salto de línea.
+3. PASO 3 (Etiqueta Obligatoria): Escribe SIEMPRE en una nueva línea la etiqueta "[[CORRECTA: X]]" (sustituyendo X por la letra real a, b, c o d de la respuesta correcta).
+4. PASO 4 (Siguiente paso):
+   - Si NO es la última pregunta: Redacta a continuación la PREGUNTA X DE 5 con sus 4 opciones a), b), c), d) en líneas separadas. (donde X es el número de la pregunta actual que se debe formular).
+   - Si ES la evaluación de la pregunta 5: ESTA ES LA EVALUACIÓN FINAL. NO redactes más preguntas. Escribe obligatoriamente al final [[COMPLETADO]].

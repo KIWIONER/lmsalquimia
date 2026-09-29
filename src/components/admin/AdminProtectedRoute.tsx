@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import LoginForm from './LoginForm';
 
 interface AdminProtectedRouteProps {
@@ -12,43 +11,45 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
     const [session, setSession] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        let isMounted = true;
-        
-        async function fetchSession() {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
-            if (isMounted) {
-                setSession(currentSession);
-                setLoading(false);
+    const checkSession = async () => {
+        try {
+            const res = await fetch('/api/admin/auth/me', {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.authenticated) {
+                    setSession(data.user);
+                } else {
+                    setSession(null);
+                }
+            } else {
+                setSession(null);
             }
+        } catch (error) {
+            console.error('Error al verificar sesión admin:', error);
+            setSession(null);
+        } finally {
+            setLoading(false);
         }
+    };
 
-        fetchSession();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-            if (isMounted) {
-                setSession(currentSession);
-                setLoading(false);
-            }
-        });
-
-        return () => {
-            isMounted = false;
-            subscription.unsubscribe();
-        };
+    useEffect(() => {
+        checkSession();
     }, []);
 
     if (loading) {
         return (
             <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white font-sans">
                 <div className="w-12 h-12 border-4 border-medical-green-500 border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Verificando Credenciales...</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Verificando Credenciales de Administrador...</p>
             </div>
         );
     }
 
     if (!session) {
-        return <LoginForm onLogin={(newSession: any) => setSession(newSession)} />;
+        return <LoginForm onLogin={(user: any) => setSession(user)} />;
     }
 
     return <>{children}</>;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { splitIntoBlocks } from '../../../lib/content';
 
 export interface LessonBlock {
     id: string | number;
@@ -21,6 +22,7 @@ export const useLessonCards = (docId?: string) => {
         }
         setLoading(true);
         try {
+            // 1. Intentar obtener tarjetas individuales pre-estructuradas
             const { data, error } = await supabase
                 .schema('nutricionista')
                 .from('tarjetas')
@@ -28,10 +30,38 @@ export const useLessonCards = (docId?: string) => {
                 .eq('documento_id', docId)
                 .order('orden', { ascending: true });
             
-            if (error) throw error;
-            setBlocks(data || []);
+            if (error) {
+                console.warn('Aviso al consultar tabla tarjetas:', error.message);
+            }
+
+            if (data && data.length > 0) {
+                setBlocks(data);
+            } else {
+                // 2. Fallback resiliente: Obtener contenido consolidado de documentos y desfragmentar en bloques
+                const { data: docData, error: docError } = await supabase
+                    .schema('nutricionista')
+                    .from('documentos')
+                    .select('contenido')
+                    .eq('id', docId)
+                    .single();
+
+                if (!docError && docData && docData.contenido && docData.contenido.trim().length > 0) {
+                    const parsedBlocks = splitIntoBlocks(docData.contenido);
+                    const formattedBlocks: LessonBlock[] = parsedBlocks.map((b, idx) => ({
+                        id: b.id,
+                        titulo: b.title,
+                        contenido: b.content,
+                        orden: idx,
+                        documento_id: docId
+                    }));
+                    setBlocks(formattedBlocks);
+                } else {
+                    setBlocks([]);
+                }
+            }
         } catch (err) {
             console.error('Error fetching tarjetas:', err);
+            setBlocks([]);
         } finally {
             setLoading(false);
         }

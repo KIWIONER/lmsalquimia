@@ -1,14 +1,41 @@
 'use client';
 
+
+function extractAIText(data: any): string {
+    if (!data) return "";
+    if (typeof data === "string") return data;
+    if (Array.isArray(data)) {
+        if (data.length === 0) return "";
+        for (const item of data) {
+            const res = extractAIText(item);
+            if (res) return res;
+        }
+    }
+    if (typeof data === "object") {
+        return (
+            extractAIText(data.output) ||
+            extractAIText(data.text) ||
+            extractAIText(data.content) ||
+            extractAIText(data.response) ||
+            extractAIText(data.message) ||
+            extractAIText(data.reply) ||
+            extractAIText(data.json) ||
+            extractAIText(data.data) ||
+            ""
+        );
+    }
+    return "";
+}
+import { normalizeCardContent } from '@/lib/codeFormatter';
+import { extractCardSearchAnchor, buildPdfViewerUrl } from '@/lib/pdfSync';
+import { PdfCanvasViewer } from '@/components/pdf/PdfCanvasViewer';
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import RichCardEditor from './RichCardEditor';
 import { toKebabCase, splitIntoBlocks, joinBlocks, isIndexTitle } from '../../lib/content';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
-import rehypeRaw from 'rehype-raw';
+import { defaultRemarkPlugins, defaultRehypePlugins } from '@/lib/markdownPlugins';
 import AdminProtectedRoute from './AdminProtectedRoute';
 
 // Dnd Kit Imports
@@ -113,7 +140,7 @@ const SortableCard = React.forwardRef<HTMLDivElement, any>(({ t, index, selected
     const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, position: 'relative', zIndex: 1 };
 
     return (
-        <div ref={setNodeRef} style={style} className="group/card relative">
+        <div ref={setNodeRef} style={style} className="group/card relative scroll-mt-6" id={`card-item-${t.id}`}>
             {/* ANCLA PARA SCROLL */}
             <div ref={ref} className="absolute -top-32" id={`card-${t.id}`} />
             
@@ -156,7 +183,7 @@ const SortableCard = React.forwardRef<HTMLDivElement, any>(({ t, index, selected
                 {!isCollapsed && (
                     <div className="select-text min-h-[300px] animate-in fade-in slide-in-from-top-4 duration-500">
                         {previewModes[t.id] ? (
-                            <div className="prose prose-slate max-w-none card-preview"><ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>{t.contenido}</ReactMarkdown></div>
+                            <div className="prose prose-slate max-w-none card-preview"><ReactMarkdown remarkPlugins={defaultRemarkPlugins} rehypePlugins={defaultRehypePlugins}>{t.contenido}</ReactMarkdown></div>
                         ) : (
                             <RichCardEditor 
                                 content={t.contenido} 
@@ -182,6 +209,16 @@ const DocumentEditor = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [expandedFolders, setExpandedFolders] = useState<Set<any>>(new Set());
     const [selectedCardId, setSelectedCardId] = useState<any>(null);
+    const handleSelectCard = useCallback((cardId: string) => {
+        setSelectedCardId(cardId);
+        setTimeout(() => {
+            const el = document.getElementById(`card-item-${cardId}`) || document.getElementById(`card-${cardId}`) || cardRefs.current[cardId];
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 50);
+    }, []);
+
     const [previewModes, setPreviewModes] = useState<Record<string, any>>({});
     const [activeEditorState, setActiveEditorState] = useState<any>(null);
     const [saveStatus, setSaveStatus] = useState('idle');
@@ -190,6 +227,23 @@ const DocumentEditor = () => {
     const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
     const [collapsedCards, setCollapsedCards] = useState<Set<any>>(new Set());
     const [showPdf, setShowPdf] = useState(false);
+    const [pdfSyncEnabled, setPdfSyncEnabled] = useState<boolean>(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("alquimia_pdf_sync_enabled");
+            return saved === "true"; // Default is OFF
+        }
+        return false;
+    });
+
+    const togglePdfSync = useCallback((val?: boolean) => {
+        setPdfSyncEnabled(prev => {
+            const next = typeof val === "boolean" ? val : !prev;
+            if (typeof window !== "undefined") {
+                localStorage.setItem("alquimia_pdf_sync_enabled", String(next));
+            }
+            return next;
+        });
+    }, []);
     const [pdfWidth, setPdfWidth] = useState(45);
     const [navWidth, setNavWidth] = useState(400);
     const [resizingMode, setResizingMode] = useState<any>(null); // 'nav' | 'pdf' | null
@@ -209,39 +263,60 @@ const DocumentEditor = () => {
     const activeUploadFolderRef = useRef<any>(null);
     const cardsScrollRef = useRef<HTMLDivElement | null>(null);
     const cardRefs = useRef<Record<string, any>>({});
+    const editorScrollContainerRef = useRef<HTMLDivElement>(null);
+    const scrollTimeoutRef = useRef<any>(null);
     const autosaveTimers = useRef<Record<string, any>>({});
+
+    
+
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
     useEffect(() => { fetchDocuments(); }, []);
 
-    useEffect(() => {
-        if (selectedCardId && cardRefs.current[selectedCardId]) {
-            cardRefs.current[selectedCardId].scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, [selectedCardId]);
+    // Scroll libre manual por usuario
 
     const fetchDocuments = async () => {
         try { 
-            // Forzamos orden alfabético/numérico por defecto para que aparezcan UD1, UD2... correctamente
-            // También traemos los IDs de las tarjetas (solo el ID para que pese poco) para contar cuántas hay
-            const { data, error } = await supabase.schema('nutricionista').from('documentos')
-                .select('id, nombre, carpeta, url, orden, tarjetas(id)')
-                .order('carpeta', { ascending: true })
-                .order('nombre', { ascending: true }); 
-            
-            if (error) throw error; 
-            setDocuments(data || []);
-        } catch (err) { console.error('Error docs:', err); }
+            const res = await fetch('/api/admin/documents');
+            const data = await res.json();
+            if (data.documents) {
+                setDocuments(data.documents);
+            }
+        } catch (err) { 
+            console.error('Error docs:', err); 
+        }
     };
 
-    const fetchTarjetas = async (docId: any) => {
+    const fetchTarjetas = async (docId: any, docObject?: any) => {
         try { 
-            const { data, error } = await supabase.schema('nutricionista').from('tarjetas').select('*').eq('documento_id', docId).order('orden'); 
-            if (error) throw error; 
-            setTarjetas(data || []); 
-            if (data?.length > 0) setSelectedCardId(data[0].id);
-        } catch (err) { console.error('Error temas:', err); }
+            const res = await fetch(`/api/admin/tarjetas?doc_id=${docId}`);
+            const data = await res.json();
+            if (data.cards && data.cards.length > 0) {
+                setTarjetas(data.cards);
+                setSelectedCardId(data.cards[0].id);
+            } else {
+                // Fallback: Si no hay filas en tarjetas pero el doc tiene contenido
+                const targetDoc = docObject || documents.find((d: any) => d.id === docId);
+                if (targetDoc && targetDoc.contenido) {
+                    const parsed = splitIntoBlocks(targetDoc.contenido);
+                    const formatted = parsed.map((p: any, idx: number) => ({
+                        id: 'temp-' + idx,
+                        documento_id: docId,
+                        titulo: p.title || `Sección ${idx + 1}`,
+                        contenido: p.content,
+                        orden: idx
+                    }));
+                    setTarjetas(formatted);
+                    if (formatted.length > 0) setSelectedCardId(formatted[0].id);
+                } else {
+                    setTarjetas([]);
+                }
+            }
+        } catch (err) { 
+            console.error('Error temas:', err); 
+            setTarjetas([]);
+        }
     };
 
     const groupedDocs = useMemo(() => {
@@ -271,7 +346,7 @@ const DocumentEditor = () => {
         activeEditorRef.current = null; 
         setSelectedDoc(doc); 
         if (doc.carpeta) setSelectedFolder(doc.carpeta);
-        fetchTarjetas(doc.id); 
+        fetchTarjetas(doc.id, doc); 
         setNavLevel('temas');
     };
     const toggleFolder = (folder: any) => { setExpandedFolders((prev: any) => { const next = new Set(prev); if (next.has(folder)) next.delete(folder); else next.add(folder); return next; }); };
@@ -340,14 +415,13 @@ const DocumentEditor = () => {
         if (!name) return;
         setSaveStatus('saving');
         try {
-            const folderName = toKebabCase(name.trim());
-            const { error: dbError } = await supabase.schema('nutricionista').from('documentos').insert([{
-                nombre: '.emptyFolderPlaceholder',
-                carpeta: folderName,
-                url: '',
-                orden: 0
-            }]);
-            if (dbError) throw dbError;
+            const res = await fetch('/api/admin/documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'create_asignatura', name })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error creando asignatura');
             await fetchDocuments();
             setSaveStatus('saved');
         } catch (error) {
@@ -374,30 +448,21 @@ const DocumentEditor = () => {
         setSaveStatus('saving');
         
         try {
-            const folderName = toKebabCase(asignatura.trim());
-            const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
-            const originalName = `${Date.now()}_${safeName}`;
-            const filePath = `dietetica-nutricion/${folderName}/${originalName}`;
-            
-            // Subir archivo al bucket 'cerebro-nutricionista'
-            const { error: uploadError } = await supabase.storage.from('cerebro-nutricionista').upload(filePath, file);
-            if (uploadError) throw uploadError;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('asignatura', asignatura.trim());
 
-            // Obtener URL Pública
-            const { data: publicUrlData } = supabase.storage.from('cerebro-nutricionista').getPublicUrl(filePath);
+            const res = await fetch('/api/admin/upload', {
+                method: 'POST',
+                body: formData
+            });
 
-            // Registrar en base de datos
-            const { error: dbError } = await supabase.schema('nutricionista').from('documentos').insert([{
-                nombre: file.name.replace(/\.[^/.]+$/, ""), // Nombre sin extensión (.pdf)
-                carpeta: folderName,
-                url: publicUrlData.publicUrl,
-                orden: 99
-            }]);
-            
-            if (dbError) throw dbError;
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al subir el PDF');
 
-            // Mostrar el alert con la URL como pidió el usuario
-            window.prompt("¡PDF subido correctamente! Aquí tienes la URL pública que puedes llevar a N8N:", publicUrlData.publicUrl);
+            if (data.publicUrl) {
+                window.prompt("¡PDF subido correctamente! Aquí tienes la URL pública que puedes llevar a N8N:", data.publicUrl);
+            }
 
             await fetchDocuments();
             setSaveStatus('saved');
@@ -483,30 +548,21 @@ const DocumentEditor = () => {
 
         setIsProcessing(true);
         try {
-            const response = await fetch('/api/cerebro', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    action: 'perfect', 
-                    content: tarjeta.contenido, 
-                    instructions: "Limpia el texto proveniente de PDF, identifica listas, añade negritas relevantes y organiza el contenido para que sea altamente legible. MANTÉN el contenido en un solo bloque, no añadidas nuevos títulos ##."
-                })
-            });
+            // Perfeccionar de manera determinística e instantánea:
+            // Limpia asteriscos de OCR, organiza títulos ###, formatea listas y código,
+            // y elimina interferencias o respuestas conversacionales no deseadas.
+            const improvedText = normalizeCardContent(tarjeta.contenido);
 
-            if (!response.ok) throw new Error('Error en la comunicación con la IA');
-            const data = await response.json();
-            const improvedText = typeof data === 'string' ? data : data.text || data.content;
-
-            if (!improvedText) throw new Error('La IA devolvió un contenido vacío');
+            if (!improvedText) throw new Error("No se pudo procesar el contenido de la tarjeta");
 
             // Actualizar tarjeta actual
             updateLocalTarjeta(id, { contenido: improvedText });
             
-            setSaveStatus('saved');
-            setTimeout(() => setSaveStatus('idle'), 2000);
-        } catch (err) {
-            console.error('Error Perfect IA:', err);
-            alert('No se pudo perfeccionar la tarjeta.');
+            setSaveStatus("saved");
+            setTimeout(() => setSaveStatus("idle"), 2000);
+        } catch (err: any) {
+            console.error("Error Perfect IA:", err);
+            alert("Error al perfeccionar: " + (err.message || err));
         } finally {
             setIsProcessing(false);
         }
@@ -519,114 +575,30 @@ const DocumentEditor = () => {
         setIsProcessing(true);
         setToolsMenuOpen(false);
         try {
-            // 1. Decidir estrategia: ¿Leemos del texto guardado o extraemos del PDF original?
-            // Priorizamos el PDF original si existe, para asegurar que el re-renderizado sea fiel al origen.
             const hasPdf = selectedDoc.url && selectedDoc.url.toLowerCase().includes('.pdf');
             
-            let payload = {};
-            let isPdfExtraction = false;
-
-            if (hasPdf) {
-                isPdfExtraction = true;
-                payload = {
-                    action: 'extract_and_structure_pdf',
-                    doc_id: selectedDoc.id,
-                    pdf_url: selectedDoc.url,
-                    nombre: selectedDoc.nombre,
-                    carpeta: selectedDoc.carpeta || 'General'
-                };
-            } else {
-                // Si no hay PDF, usamos el contenido de texto que tengamos
-                const { data: docData } = await supabase.schema('nutricionista').from('documentos').select('contenido').eq('id', selectedDoc.id).single();
-                const rawContent = docData?.contenido || joinBlocks(tarjetas);
-                
-                if (!rawContent) throw new Error('No hay contenido ni PDF para procesar.');
-                
-                payload = { 
-                    action: 'structure', 
-                    content: rawContent, 
-                    docName: selectedDoc.nombre 
-                };
-            }
-
-            // 2. Llamar a n8n
-            const targetUrl = isPdfExtraction 
-                ? 'https://cerebro.agencialquimia.com/webhook/cerebro-procesar-pdf'
-                : '/api/cerebro';
-
-            const response = await fetch(targetUrl, {
+            // 1. Llamar al endpoint seguro del servidor que procesa con pdf-parse y sincroniza con Supabase
+            const res = await fetch('/api/admin/documents', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    action: 'structure',
+                    doc_id: selectedDoc.id,
+                    pdf_url: selectedDoc.url
+                })
             });
 
-            if (!response.ok) throw new Error('Error en la comunicación con la IA (' + response.status + ')');
-            
-            const rawBody = await response.text();
-            let structuredMarkdown = '';
-            let parsedData = null;
-            
-            try {
-                parsedData = JSON.parse(rawBody);
-            } catch (e) {
-                // Not JSON, assume it's raw text
-                parsedData = rawBody;
-            }
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al auto-estructurar');
 
-            // A) Si el webhook de N8N se encargó de insertar las tarjetas directamente en la BD:
-            if (parsedData && parsedData.ok === true && parsedData.tarjetas !== undefined) {
-                console.log("N8N procesó e insertó las tarjetas automáticamente. Refrescando interfaz...");
-                await fetchTarjetas(selectedDoc.id);
-                setSaveStatus('saved');
-                setIsProcessing(false);
-                return; // Cortocircuito, N8N ya hizo el trabajo sucio.
-            }
+            // 2. Refrescar tarjetas en la interfaz
+            await fetchTarjetas(selectedDoc.id);
+            await fetchDocuments();
 
-            // B) Flujo Clásico: Si N8N devolvió el texto puro en Markdown para que el Frontend lo corte
-            structuredMarkdown = typeof parsedData === 'string' ? parsedData : (
-                parsedData.texto_final || 
-                parsedData.text || 
-                parsedData.content || 
-                parsedData.markdown || 
-                parsedData.response || 
-                parsedData.output || 
-                parsedData.result ||
-                // Fallback: Si es un objeto, buscar la primera propiedad que sea un string largo
-                Object.values(parsedData).find(v => typeof v === 'string' && v.length > 50)
-            );
-
-            if (!structuredMarkdown || structuredMarkdown.length < 50) {
-                console.error("N8N RESPONSE:", parsedData);
-                throw new Error('La IA ha devuelto un resultado vacío o nulo. Data recibida: ' + JSON.stringify(parsedData).substring(0, 100));
-            }
-
-            // 3. Split y guardar (Frontend)
-            const newBlocks = splitIntoBlocks(structuredMarkdown);
-            
-            if (tarjetas.length > 3 && newBlocks.length <= 1) {
-                throw new Error('La IA no ha podido estructurar el contenido en bloques. Se cancela el proceso para no perder las tarjetas actuales.');
-            }
-
-            const newCards = newBlocks.map((b: any, i: number) => ({
-                id: crypto.randomUUID(),
-                documento_id: selectedDoc.id,
-                titulo: b.title,
-                contenido: b.content,
-                orden: i
-            }));
-
-            // Limpiar anteriores e insertar nuevas en BD Front-side
-            const { error: delError } = await supabase.schema('nutricionista').from('tarjetas').delete().eq('documento_id', selectedDoc.id);
-            if (delError) throw delError;
-
-            const { error: insError } = await supabase.schema('nutricionista').from('tarjetas').insert(newCards);
-            if (insError) throw insError;
-
-            setTarjetas(newCards);
-            if (newCards.length > 0) setSelectedCardId(newCards[0].id);
             setSaveStatus('saved');
+            alert(`¡Documento estructurado con éxito! Se han generado ${data.total || data.cards?.length || 0} tarjetas.`);
         } catch (err: any) {
-            console.error('Error IA:', err);
+            console.error('Error IA Auto-Estructurar:', err);
             alert('Error al estructurar el documento: ' + (err.message || err));
         } finally {
             setIsProcessing(false);
@@ -1062,7 +1034,7 @@ const DocumentEditor = () => {
                                                 isSelected={selectedBulkIds.has(t.id)}
                                                 onToggleSelect={toggleCardSelection}
                                                 onDelete={handleDeleteCard}
-                                                onSelect={() => setSelectedCardId(t.id)} 
+                                                onSelect={() => handleSelectCard(t.id)} 
                                             />
                                         ))}
                                     </div>
@@ -1125,12 +1097,26 @@ const DocumentEditor = () => {
                     {/* PAGINACIÓN RÁPIDA Y ESTADO */}
                     {selectedDoc && tarjetas.length > 0 && (
                         <div className="flex items-center gap-3 shrink-0">
+                            {selectedDoc.url && (
+                                <button
+                                    onClick={() => togglePdfSync()}
+                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border shadow-sm ${
+                                        pdfSyncEnabled 
+                                            ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/25" 
+                                            : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                    }`}
+                                    title={pdfSyncEnabled ? "Desactivar resaltado automático en PDF" : "Activar resaltado automático en PDF"}
+                                >
+                                    <div className={`w-2 h-2 rounded-full transition-all ${pdfSyncEnabled ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-slate-400"}`} />
+                                    <span>{pdfSyncEnabled ? "Sincronizar PDF: ON" : "Sincronizar PDF: OFF"}</span>
+                                </button>
+                            )}
                             <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/60 p-1 rounded-xl shadow-inner">
                                 <button
                                     disabled={tarjetas.findIndex(t => t.id === selectedCardId) <= 0}
                                     onClick={() => {
                                         const idx = tarjetas.findIndex(t => t.id === selectedCardId);
-                                        if (idx > 0) setSelectedCardId(tarjetas[idx - 1].id);
+                                        if (idx > 0) handleSelectCard(tarjetas[idx - 1].id);
                                     }}
                                     className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 shadow-sm"
                                 >
@@ -1144,7 +1130,7 @@ const DocumentEditor = () => {
                                     disabled={tarjetas.findIndex(t => t.id === selectedCardId) >= tarjetas.length - 1}
                                     onClick={() => {
                                         const idx = tarjetas.findIndex(t => t.id === selectedCardId);
-                                        if (idx >= 0 && idx < tarjetas.length - 1) setSelectedCardId(tarjetas[idx + 1].id);
+                                        if (idx >= 0 && idx < tarjetas.length - 1) handleSelectCard(tarjetas[idx + 1].id);
                                     }}
                                     className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 shadow-sm"
                                 >
@@ -1187,7 +1173,7 @@ const DocumentEditor = () => {
                     )}
 
                     {/* AREA DE SCROLL DE TARJETAS */}
-                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar relative">
+                    <div ref={editorScrollContainerRef}  className="flex-1 overflow-y-auto p-12 custom-scrollbar relative">
                         {isProcessing && (
                             <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-[200] flex flex-col items-center justify-center animate-in fade-in duration-500">
                                 <div className="w-24 h-24 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center mb-8 border border-slate-100">
@@ -1259,25 +1245,68 @@ const DocumentEditor = () => {
                 </div>
             )}
 
-            {/* PANEL 4: PDF VIEWER (SIDE-BY-SIDE RESIZABLE) */}
-            {showPdf && selectedDoc?.url && (
-                <div 
-                    style={{ width: `${pdfWidth}%` }} 
-                    className="border-l border-slate-200 bg-slate-100 h-full flex flex-col relative z-[90] shrink-0"
-                >
-                    <div className="h-14 px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-medical-green-50 flex items-center justify-center text-medical-green-600">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /><path d="M9 13h6m-6 4h6m-6-8h1" /></svg>
+            {/*/* PANEL 4: PDF VIEWER (SIDE-BY-SIDE RESIZABLE) */}
+            {showPdf && selectedDoc?.url && (() => {
+                const activeAdminCard = tarjetas.find((t: any) => t.id === selectedCardId) || tarjetas[0];
+                const activeIndex = tarjetas.findIndex((t: any) => t.id === (activeAdminCard?.id));
+                
+                return (
+                    <div 
+                        style={{ width: `${pdfWidth}%` }} 
+                        className="border-l border-slate-800 bg-slate-900 h-full flex flex-col relative z-[90] shrink-0"
+                    >
+                        <div className="h-14 px-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between shrink-0 gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${pdfSyncEnabled ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-400"}`}>
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /><path d="M9 13h6m-6 4h6m-6-8h1" /></svg>
+                                </div>
+                                <div className="min-w-0">
+                                    <span className={`text-[10px] font-black uppercase tracking-widest block ${pdfSyncEnabled ? "text-emerald-400" : "text-slate-400"}`}>
+                                        {pdfSyncEnabled ? "PDF Sincronizado (ON)" : "Visor PDF (Estándar)"}
+                                    </span>
+                                    <span className="text-xs text-slate-200 font-bold truncate block max-w-[180px]">
+                                        Tarjeta {activeIndex + 1}: {activeAdminCard?.titulo || "Documento"}
+                                    </span>
+                                </div>
                             </div>
-                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Documento Original</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    onClick={() => togglePdfSync()}
+                                    className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1.5 ${
+                                        pdfSyncEnabled
+                                            ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30"
+                                            : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                                    }`}
+                                    title={pdfSyncEnabled ? "Desactivar sincronización de resaltado" : "Activar sincronización de resaltado"}
+                                >
+                                    <div className={`w-2 h-2 rounded-full ${pdfSyncEnabled ? "bg-emerald-400 shadow-[0_0_6px_#10b981]" : "bg-slate-500"}`} />
+                                    <span>{pdfSyncEnabled ? "Sincronizado: ON" : "Sincronizado: OFF"}</span>
+                                </button>
+                                <a
+                                    href={selectedDoc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors"
+                                    title="Abrir en pestaña nueva"
+                                >
+                                    ↗
+                                </a>
+                            </div>
+                        </div>
+                        <div className={`flex-1 bg-slate-900 overflow-hidden relative ${resizingMode ? "pointer-events-none" : ""}`}>
+                            <PdfCanvasViewer
+                                pdfUrl={selectedDoc.url}
+                                cardTitle={activeAdminCard?.titulo || ""}
+                                cardContent={activeAdminCard?.contenido || ""}
+                                cardIndex={activeIndex}
+                                enableHighlight={pdfSyncEnabled}
+                                onToggleHighlight={togglePdfSync}
+                                className="w-full h-full"
+                            />
                         </div>
                     </div>
-                    <div className={`flex-1 bg-slate-500 overflow-hidden relative ${resizingMode ? 'pointer-events-none' : ''}`}>
-                        <iframe src={`${selectedDoc.url}#view=FitH`} className="w-full h-full border-none" title="Original PDF" />
-                    </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
         <style dangerouslySetInnerHTML={{ 
             __html: `

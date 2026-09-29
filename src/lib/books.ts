@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 
 export interface Unit {
+    id?: string;
     nombre: string;
     url: string;
     carpeta: string;
@@ -9,7 +10,7 @@ export interface Unit {
 }
 
 export interface Module {
-    id: string; // carpeta
+    id: string; // carpeta slug
     name: string; // carpeta (cleaned)
     units: Unit[];
     firstUnit?: Unit;
@@ -21,7 +22,7 @@ export function slugify(text: string): string {
         .replace(/\.(pdf|PDF|docx|DOCX|doc|DOC|zip|ZIP)$/, "") // Quitar extensiones
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
-        .replace(/[^a-zA-Z0-9-]/g, "-") // Reemplazar caracteres raros por guiones (ya no mantenemos el punto)
+        .replace(/[^a-zA-Z0-9-]/g, "-") // Reemplazar caracteres raros por guiones
         .replace(/-+/g, "-") // Evitar guiones dobles
         .toLowerCase()
         .replace(/-$/, "") // Quitar guion final si quedara
@@ -36,7 +37,7 @@ export async function getLibraryStructure(userId: string = 'estudiante-demo'): P
     const { data: documents, error: docError } = await supabase
         .schema('nutricionista')
         .from('documentos')
-        .select('nombre, carpeta, url')
+        .select('id, nombre, carpeta, url')
         .order('carpeta', { ascending: true })
         .order('nombre', { ascending: true });
 
@@ -59,8 +60,7 @@ export async function getLibraryStructure(userId: string = 'estudiante-demo'): P
     const completedSlugs = new Set((progress || []).map(p => p.document_slug));
 
     // Agrupar por carpeta
-    const agrupados = (documents as Unit[]).reduce((acc: Record<string, Module>, doc) => {
-        // Protección contra nulos para evitar el error "Cannot read properties of null (reading 'trim')"
+    const agrupados = (documents as (Unit & { id: string })[]).reduce((acc: Record<string, Module>, doc) => {
         const carpetaRaw = doc.carpeta || 'Sin Carpeta';
         const nombreRaw = doc.nombre || 'Documento sin nombre';
         
@@ -79,7 +79,8 @@ export async function getLibraryStructure(userId: string = 'estudiante-demo'): P
             };
         }
         acc[carpetaId].units.push({
-            ...doc,
+            id: doc.id,
+            url: doc.url,
             nombre: nombreLimpio,
             carpeta: carpetaId,
             slug,

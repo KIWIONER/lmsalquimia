@@ -6,10 +6,23 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://tu-proyecto.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'tu-anon-key-aqui',
-    {
+  const url = request.nextUrl.clone();
+
+  // Si la ruta es del panel de administración (/admin/*), se delega a la autenticación autónoma
+  if (url.pathname.startsWith('/admin')) {
+    return supabaseResponse;
+  }
+
+  // Si la ruta es de la API de administración o integraciones, dejar pasar directo
+  if (url.pathname.startsWith('/api/admin') || url.pathname.startsWith('/api/v1/integrations')) {
+    return supabaseResponse;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://tu-proyecto.supabase.co';
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'tu-anon-key-aqui';
+
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -24,19 +37,11 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
-    }
-  );
+    });
 
-  // Refresca la sesión si ha expirado
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Protección de rutas administrativas y privadas si fuera necesario
-  const url = request.nextUrl.clone();
-  if (!user && url.pathname.startsWith('/admin') && url.pathname !== '/admin/login') {
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+    await supabase.auth.getUser();
+  } catch {
+    // Ignorar errores en rutas públicas
   }
 
   return supabaseResponse;

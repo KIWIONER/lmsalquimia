@@ -4,9 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useChatStore } from '../store/chatStore';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
-import rehypeRaw from 'rehype-raw';
+import { defaultRemarkPlugins, defaultRehypePlugins } from '@/lib/markdownPlugins';
 import { X, CheckCircle, XCircle } from 'lucide-react';
 
 interface ChatSidebarProps {
@@ -269,8 +267,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ unitName, moduleName, unitSlu
                                                     [&_td]:border-b [&_td]:border-slate-100 [&_td]:py-1.5 [&_td]:pr-4
                                                 ">
                                                     <ReactMarkdown
-                                                        remarkPlugins={[remarkGfm, remarkBreaks]}
-                                                        rehypePlugins={[rehypeRaw]}
+                                                        remarkPlugins={defaultRemarkPlugins}
+                                                        rehypePlugins={defaultRehypePlugins}
                                                     >
                                                         {normalizeMarkdown(displayContent)}
                                                     </ReactMarkdown>
