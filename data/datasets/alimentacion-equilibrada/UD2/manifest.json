@@ -1,0 +1,16 @@
+{
+  "unit": "UD2",
+  "asignatura": "alimentacion-equilibrada",
+  "nombre_oficial": "UD2.MACRONUTRIENTES E METABOLISMO ENERXETICO",
+  "paginas_pedagogicas": 117,
+  "macro_chunks_padres": 117,
+  "micro_chunks_hijos": 162,
+  "chatml_ejemplos_sft": 162,
+  "total_palabras_hijos": 40205,
+  "archivos_generados": [
+    "data/datasets/alimentacion-equilibrada/UD2/raw_extracted.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD2/normalized_es.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD2/rag_embeddings.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD2/sft_chatml.jsonl"
+  ]
+}

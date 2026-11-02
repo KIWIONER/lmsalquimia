@@ -42,26 +42,55 @@ export async function POST(request: NextRequest) {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Auto-estructurar PDF sin límites artificiales (100% de contenido preservado)
+    // 1. Auto-estructurar PDF con PyMuPDF (Tablas Markdown, OCR y coordenadas de página)
     if (action === "structure") {
       const targetDocId = doc_id || id;
       if (!targetDocId || !pdf_url) {
         return NextResponse.json({ error: "doc_id y pdf_url son requeridos" }, { status: 400 });
       }
 
-      const pdfRes = await fetch(pdf_url);
-      if (!pdfRes.ok) throw new Error("No se pudo descargar el PDF de Storage");
-      const buffer = Buffer.from(await pdfRes.arrayBuffer());
+      const cerebroPyUrl = process.env.CEREBRO_PY_URL || "http://127.0.0.1:8055";
+      let blocks: any[] = [];
+      let joinedContent = "";
 
-      const pdfData = await pdfParse(buffer);
-      const text = pdfData.text || "";
-
-      if (!text.trim()) {
-        return NextResponse.json({ error: "El PDF no contiene texto extraíble" }, { status: 400 });
+      // Intentar primero con el microservicio Python PyMuPDF
+      try {
+        const pyRes = await fetch(`${cerebroPyUrl}/api/pdf/structure`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdf_url }),
+        });
+        if (pyRes.ok) {
+          const pyData = await pyRes.json();
+          if (pyData && Array.isArray(pyData.cards) && pyData.cards.length > 0) {
+            blocks = pyData.cards.map((c: any, idx: number) => ({
+              id: idx + 1,
+              title: c.titulo,
+              content: c.contenido,
+              orden: c.orden ?? idx,
+              pagina: c.pagina ?? 1
+            }));
+            joinedContent = blocks.map(b => `## ${b.title}\n${b.content}`).join("\n\n");
+          }
+        }
+      } catch (pyErr: any) {
+        console.warn("Aviso: cerebro-py fallo en parseo de PDF, recurriendo a pdf-parse de Node:", pyErr.message);
       }
 
-      const blocks = splitIntoBlocks(text);
-      const joinedContent = joinBlocks(blocks);
+      // Fallback a pdf-parse en Node si Python no estuvo disponible
+      if (blocks.length === 0) {
+        const pdfRes = await fetch(pdf_url);
+        if (!pdfRes.ok) throw new Error("No se pudo descargar el PDF de Storage");
+        const buffer = Buffer.from(await pdfRes.arrayBuffer());
+        const pdfData = await pdfParse(buffer);
+        const text = pdfData.text || "";
+        if (!text.trim()) {
+          return NextResponse.json({ error: "El PDF no contiene texto extraíble" }, { status: 400 });
+        }
+        const parsedBlocks = splitIntoBlocks(text);
+        blocks = parsedBlocks.map((b, idx) => ({ ...b, orden: idx, pagina: 1 }));
+        joinedContent = joinBlocks(parsedBlocks);
+      }
 
       await supabaseAdmin
         .schema("nutricionista")

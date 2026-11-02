@@ -1,0 +1,16 @@
+{
+  "unit": "UD1",
+  "asignatura": "alimentacion-equilibrada",
+  "nombre_oficial": "UD1.Conceptos basicos",
+  "paginas_pedagogicas": 21,
+  "macro_chunks_padres": 21,
+  "micro_chunks_hijos": 22,
+  "chatml_ejemplos_sft": 22,
+  "total_palabras_hijos": 9710,
+  "archivos_generados": [
+    "data/datasets/alimentacion-equilibrada/UD1/raw_extracted.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD1/normalized_es.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD1/rag_embeddings.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD1/sft_chatml.jsonl"
+  ]
+}
