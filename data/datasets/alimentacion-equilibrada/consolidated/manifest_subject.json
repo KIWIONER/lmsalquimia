@@ -7,7 +7,7 @@
   ],
   "total_unidades": 3,
   "total_paginas_pedagogicas": 178,
-  "total_micro_chunks_rag": 224,
-  "total_pares_chatml_sft": 224,
-  "total_palabras_corpus": 67870
+  "total_micro_chunks_rag": 178,
+  "total_pares_chatml_sft": 178,
+  "total_palabras_corpus": 66747
 }
