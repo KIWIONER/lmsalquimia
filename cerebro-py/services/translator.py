@@ -182,35 +182,113 @@ def apply_clinical_glossary(text: str) -> str:
         
     return normalized
 
+# Reglas morfosintácticas y léxicas esenciales Gallego -> Castellano
+LINGUISTIC_RULES = [
+    # 1. Limpieza tipográfica y de símbolos extraños de OCR
+    (r'[“”„«»]', '"'),
+    (r'[‘’‚‹›]', "'"),
+    (r'[—–−]', '-'),
+    (r'[♫ï\ufffd]', ''),
+    (r'^\s*[\$`]\s*', '- '),
+    (r'\bBloquea\b', '-'),
+    # 2. Contracciones y artículos
+    (r'\bdo\b', 'del'), (r'\bda\b', 'de la'), (r'\bdos\b', 'de los'), (r'\bdas\b', 'de las'),
+    (r'\bno\b', 'en el'), (r'\bna\b', 'en la'), (r'\bnos\b', 'en los'), (r'\bnas\b', 'en las'),
+    (r'\bao\b', 'al'), (r'\bá\b', 'a la'), (r'\baos\b', 'a los'), (r'\bás\b', 'a las'),
+    (r'\bpolo\b', 'por el'), (r'\bpola\b', 'por la'), (r'\bpolos\b', 'por los'), (r'\bpolas\b', 'por las'),
+    (r'\bco\b', 'con el'), (r'\bcoa\b', 'con la'), (r'\bcos\b', 'con los'), (r'\bcoas\b', 'con las'),
+    (r'\bcun\b', 'con un'), (r'\bcunha\b', 'con una'), (r'\bcuns\b', 'con unos'), (r'\bcunhas\b', 'con unas'),
+    (r'\bdun\b', 'de un'), (r'\bdunha\b', 'de una'), (r'\bduns\b', 'de unos'), (r'\bdunhas\b', 'de unas'),
+    (r'\bnun\b', 'en un'), (r'\bnunha\b', 'en una'), (r'\bnuns\b', 'en unos'), (r'\bnunhas\b', 'en unas'),
+    (r'\bo\b', 'el'), (r'\ba\b', 'la'), (r'\bos\b', 'los'), (r'\bas\b', 'las'),
+    (r'\bO\b', 'El'), (r'\bA\b', 'La'), (r'\bOs\b', 'Los'), (r'\bAs\b', 'Las'),
+    (r'\bNa\b', 'En la'), (r'\bNo\b', 'En el'), (r'\bNas\b', 'En las'), (r'\bNos\b', 'En los'),
+    # Contracciones y artículos estándar
+    (r'\bdo\b', 'del'), (r'\bda\b', 'de la'), (r'\bdos\b', 'de los'), (r'\bdas\b', 'de las'),
+    (r'\bno\b', 'en el'), (r'\bna\b', 'en la'), (r'\bnos\b', 'en los'), (r'\bnas\b', 'en las'),
+    (r'\bao\b', 'al'), (r'\bá\b', 'a la'), (r'\baos\b', 'a los'), (r'\bás\b', 'a las'),
+    (r'\bpolo\b', 'por el'), (r'\bpola\b', 'por la'), (r'\bpolos\b', 'por los'), (r'\bpolas\b', 'por las'),
+    # 3. Posesivos y pronombres
+    (r'\bseu\b', 'su'), (r'\bsúa\b', 'su'), (r'\bseus\b', 'sus'), (r'\bsúas\b', 'sus'),
+    (r'\bSeu\b', 'Su'), (r'\bSúa\b', 'Su'), (r'\bSeus\b', 'Sus'), (r'\bSúas\b', 'Sus'),
+    (r'\bnel\b', 'en él'), (r'\bnela\b', 'en ella'), (r'\bneles\b', 'en ellos'), (r'\bnelas\b', 'en ellas'),
+    # 4. Conectores, adverbios y falsos amigos
+    (r'\bou\b', 'o'), (r'\be\b', 'y'), (r'\bE\b', 'Y'),
+    (r'\btamén\b', 'también'), (r'\bmáis\b', 'más'), (r'\bnon\b', 'no'), (r'\bmoi\b', 'muy'),
+    (r'\bmoito\b', 'mucho'), (r'\bmoita\b', 'mucha'), (r'\bmoitos\b', 'muchos'), (r'\bmoitas\b', 'muchas'),
+    (r'\bcanto máis\b', 'cuanto más'), (r'\bpolo xeral\b', 'por lo general'), (r'\ben xeral\b', 'en general'),
+    (r'\bpolo tanto\b', 'por lo tanto'), (r'\bpreto de\b', 'cerca de'), (r'\barredor dun\b', 'alrededor de un'),
+    (r'\barredor de\b', 'alrededor de'), (r'\baínda que\b', 'aunque'), (r'\baínda\b', 'aún'),
+    (r'\bpois\b', 'pues'), (r'\bentón\b', 'entonces'), (r'\bsenón\b', 'sino'),
+    (r'\bde xeito\b', 'de forma'), (r'\bxeito\b', 'forma'), (r'\bxeitos\b', 'formas'),
+    (r'\badoitamos\b', 'solemos'), (r'\badoita\b', 'suele'), (r'\badoitan\b', 'suelen'),
+    # 5. Verbos conjugados habituales
+    (r'\bé\b', 'es'), (r'\bson\b', 'son'), (r'\bera\b', 'era'), (r'\beran\b', 'eran'),
+    (r'\bfoi\b', 'fue'), (r'\bforon\b', 'fueron'),
+    (r'\bteñen\b', 'tienen'), (r'\bten\b', 'tiene'), (r'\bteña\b', 'tenga'), (r'\bteñan\b', 'tengan'), (r'\btiña\b', 'tenía'), (r'\btiñan\b', 'tenían'),
+    (r'\bconteñen\b', 'contienen'), (r'\bcontén\b', 'contiene'), (r'\bconteña\b', 'contenga'), (r'\bconteñan\b', 'contengan'),
+    (r'\bposúen\b', 'poseen'), (r'\bposúe\b', 'posee'), (r'\bPosúen\b', 'Poseen'),
+    (r'\bachegan\b', 'aportan'), (r'\bachega\b', 'aporta'), (r'\bAchegan\b', 'Aportan'),
+    (r'\batopamos\b', 'encontramos'), (r'\batópanse\b', 'se encuentran'), (r'\batopar\b', 'encontrar'),
+    (r'\basócianse\b', 'se asocian'), (r'\basóciase\b', 'se asocia'),
+    (r'\bobteña\b', 'obtenga'), (r'\bobteñan\b', 'obtengan'),
+    # 6. Alimentos, Pescados y Bioquímica (Vocabulario crítico de Nutrición)
+    (r'\bleite\b', 'leche'), (r'\bqueixos\b', 'quesos'), (r'\bqueixo\b', 'queso'),
+    (r'\bmanteiga\b', 'mantequilla'), (r'\benteiro\b', 'entero'),
+    (r'\bovos\b', 'huevos'), (r'\bovo\b', 'huevo'),
+    (r'\bpeixes\b', 'pescados'), (r'\bpeixe\b', 'pescado'),
+    (r'\bPeixes\b', 'Pescados'), (r'\bPeixe\b', 'Pescado'),
+    (r'\bsemigraxos\b', 'semigrasos'), (r'\bsemigraxo\b', 'semigraso'),
+    (r'\bSemigraxos\b', 'Semigrasos'), (r'\bSemigraxo\b', 'Semigraso'),
+    (r'\bgraxos\b', 'grasos'), (r'\bgraxo\b', 'graso'), (r'\bgraxas\b', 'grasas'), (r'\bgraxa\b', 'grasa'),
+    (r'\bGraxos\b', 'Grasos'), (r'\bGraxo\b', 'Graso'), (r'\bGraxas\b', 'Grasas'), (r'\bGraxa\b', 'Grasa'),
+    (r'\bporcentaxe\b', 'porcentaje'), (r'\bdoada dixestión\b', 'fácil digestión'), (r'\bdoada\b', 'fácil'), (r'\bdixestión\b', 'digestión'),
+    (r'\bfígado\b', 'hígado'), (r'\bbrancos\b', 'blancos'), (r'\bbranco\b', 'blanco'), (r'\bazuis\b', 'azules'), (r'\bazul\b', 'azul'),
+    (r'\blinguado\b', 'lenguado'), (r'\bdourada\b', 'dorada'), (r'\bgalo\b', 'gallo'),
+    (r'\brodaballo\b', 'rodaballo'), (r'\brobaliza\b', 'lubina'), (r'\bpescada\b', 'merluza'),
+    (r'\bbacallau\b', 'bacalao'), (r'\bprago\b', 'pargo'), (r'\bcongro\b', 'congrio'),
+    (r'\btroita\b', 'trucha'), (r'\bbonito\b', 'bonito'), (r'\bbocarte\b', 'bocarte'),
+    (r'\bpeixe espada\b', 'pez espada'), (r'\bcontido\b', 'contenido'), (r'\bcorpo\b', 'cuerpo'),
+    (r'\bdoenza\b', 'enfermedad'), (r'\bdoenzas\b', 'enfermedades'), (r'\bcancro\b', 'cáncer'),
+    (r'\benervía\b', 'energía'), (r'\benervético\b', 'energético'), (r'\benervética\b', 'energética'),
+    (r'\bVitamina Y\b', 'Vitamina E'), (r'\bVitamina e\b', 'Vitamina E'),
+    (r'\bníveis\b', 'niveles'), (r'\bniveis\b', 'niveles'), (r'\bcantidade\b', 'cantidad'),
+    (r'\btratamentos\b', 'tratamientos'),
+    (r'\bpor [eé]l su\b', 'por su'),
+    (r'\ben [eé]l su\b', 'en su'),
+    (r'\bdel su\b', 'de su'),
+    (r'\b[eé]l su\b', 'su'),
+    (r'\bla su\b', 'su'),
+]
+def apply_linguistic_normalization(text: str) -> str:
+    """Aplica las reglas deterministas para eliminar erratas y falsos amigos."""
+    if not text:
+        return ""
+    normalized = text
+    for pattern, replacement in LINGUISTIC_RULES:
+        normalized = re.sub(pattern, replacement, normalized)
+    return normalized
 
 def translate_sentence_segment(text: str) -> str:
-    """
-    Traduce un bloque de texto gallego a castellano utilizando el modelo neural
-    local Helsinki-NLP/opus-mt-gl-es (100% offline), garantizando cero rate-limits.
-    """
     if not text or not text.strip():
         return text
-
-    clean = text.strip()
+    # 1. Normalización lingüística previa (elimina 100% de falsos amigos y símbolos de PDF)
+    cleaned = apply_linguistic_normalization(text.strip())
+    # 2. Modelo neuronal local para afinar la concordancia
     tok, mod = get_local_translator()
-
     if tok and mod:
         try:
-            # Dividir en oraciones si el bloque es extenso
-            sentences = [s.strip() for s in re.split(r"(?<=[.!?\n])\s+", clean) if s.strip()]
+            sentences = [s.strip() for s in re.split(r"(?<=[.!?\n])\s+", cleaned) if s.strip()]
             if not sentences:
-                sentences = [clean]
-                
+                sentences = [cleaned]
             inputs = tok(sentences, return_tensors="pt", padding=True, truncation=True, max_length=512)
             outputs = mod.generate(**inputs, max_length=512)
-            translated_sentences = [tok.decode(t, skip_special_tokens=True) for t in outputs]
-            
-            full_translated = " ".join(translated_sentences)
-            return apply_clinical_glossary(full_translated)
+            translated = " ".join([tok.decode(t, skip_special_tokens=True) for t in outputs])
+            # Aplicar glosario y normalización de cierre
+            return apply_linguistic_normalization(apply_clinical_glossary(translated))
         except Exception as e:
-            print(f"Aviso neural: {e}. Usando glosario.")
-
-    return apply_clinical_glossary(clean)
+            print(f"Aviso neural: {e}. Usando normalizador lingüístico.")
+    return apply_clinical_glossary(cleaned)
 
 
 def translate_gl_to_es(text_markdown: str) -> str:

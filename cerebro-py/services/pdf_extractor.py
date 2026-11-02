@@ -49,9 +49,31 @@ def extract_pdf_to_clean_records(
         # 3. Detectar si contiene tablas Markdown (| col | col |)
         has_tables = bool(re.search(r'\|.+\|.+\|', clean_text))
         
-        # 4. Inferir título de sección a partir de la primera línea o cabecera
-        first_line = clean_text.split('\n')[0].strip()
-        clean_section = re.sub(r'^[#*\-\s_]+', '', first_line)[:70] or f"Página {display_page}"
+        # 4. Inferir título de sección pedagógico sin capturar fragmentos de oraciones huérfanas
+        lines = [line.strip() for line in clean_text.split('\n') if line.strip()]
+        clean_section = f"{doc_name.replace('.pdf', '').replace('.PDF', '')} - Pág. {display_page}"
+        
+        continuation_starters = (
+            "es un", "son los", "desempeñan", "consiste", "que consiste", "de los", "de las",
+            "en el", "en la", "para que", "por lo tanto", "así como", "y las", "y los", "con los"
+        )
+        
+        # Buscar encabezados estructurados (#, numeración formal 1.1, UD, etc.)
+        for line in lines[:6]:
+            cleaned_line = re.sub(r'^[#*\-\s_]+', '', line).strip()
+            if re.match(r'^(UD\s*\d+|Tema\s*\d+|Unidad\s*\d+|\d+(\.\d+)*\s+[A-ZÁÉÍÓÚ])', cleaned_line, re.IGNORECASE):
+                clean_section = cleaned_line[:70]
+                break
+            if line.startswith('#') and len(cleaned_line) <= 70:
+                clean_section = cleaned_line
+                break
+                
+        # Si no hubo encabezado explícito, verificar si la primera línea califica como título corto
+        if clean_section.startswith(f"{doc_name.replace('.pdf', '').replace('.PDF', '')} - Pág.") and lines:
+            first_line = re.sub(r'^[#*\-\s_]+', '', lines[0]).strip()
+            is_continuation = any(first_line.lower().startswith(s) for s in continuation_starters)
+            if not is_continuation and len(first_line) <= 65 and not first_line.endswith('.') and first_line and first_line[0].isupper():
+                clean_section = first_line
         # 5. Calcular metadatos clínicos
         word_count = len(clean_text.split())
         sha256_hash = compute_sha256(clean_text)

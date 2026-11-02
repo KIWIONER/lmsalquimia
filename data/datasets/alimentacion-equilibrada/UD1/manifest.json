@@ -4,9 +4,9 @@
   "nombre_oficial": "UD1.Conceptos basicos",
   "paginas_pedagogicas": 21,
   "macro_chunks_padres": 21,
-  "micro_chunks_hijos": 22,
-  "chatml_ejemplos_sft": 22,
-  "total_palabras_hijos": 9710,
+  "micro_chunks_hijos": 21,
+  "chatml_ejemplos_sft": 21,
+  "total_palabras_hijos": 9754,
   "archivos_generados": [
     "data/datasets/alimentacion-equilibrada/UD1/raw_extracted.jsonl",
     "data/datasets/alimentacion-equilibrada/UD1/normalized_es.jsonl",
