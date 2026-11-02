@@ -288,11 +288,15 @@ def ingest_all(asignatura: str = "alimentacion-equilibrada"):
 
 
 if __name__ == "__main__":
-    arg = sys.argv[1] if len(sys.argv) > 1 else "UD1"
-    if arg in ["--all", "-a", "all"]:
+    args = sys.argv[1:]
+    if not args or args[0] in ["--all", "-a", "all"]:
         ingest_all()
-    elif arg in ["--consolidate", "-c"]:
+    elif args[0] in ["--consolidate", "-c"]:
         consolidate_subject()
     else:
-        ingest_unit(arg)
+        for u in args:
+            try:
+                ingest_unit(u)
+            except Exception as e:
+                print(f"⚠️ Error procesando {u}: {e}")
         consolidate_subject()

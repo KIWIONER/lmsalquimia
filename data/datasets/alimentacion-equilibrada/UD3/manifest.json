@@ -1,0 +1,16 @@
+{
+  "unit": "UD3",
+  "asignatura": "alimentacion-equilibrada",
+  "nombre_oficial": "UD3. Micronutrientes e auga",
+  "paginas_pedagogicas": 40,
+  "macro_chunks_padres": 40,
+  "micro_chunks_hijos": 40,
+  "chatml_ejemplos_sft": 40,
+  "total_palabras_hijos": 17955,
+  "archivos_generados": [
+    "data/datasets/alimentacion-equilibrada/UD3/raw_extracted.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD3/normalized_es.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD3/rag_embeddings.jsonl",
+    "data/datasets/alimentacion-equilibrada/UD3/sft_chatml.jsonl"
+  ]
+}

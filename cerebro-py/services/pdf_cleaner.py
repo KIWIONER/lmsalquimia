@@ -5,10 +5,37 @@ LMS Alquimia - Fase 2: Extracción y Limpieza de Ruido Editorial.
 import re
 import pymupdf
 
+def clean_unicode_artifacts(text: str) -> str:
+    """
+    Normaliza caracteres tipográficos especiales de PDFs que rompen la tokenización:
+    - Comillas tipográficas (“ ”, « », „ “) -> comillas estándar "
+    - Comillas simples tipográficas (‘ ’, ‚ ‘) -> '
+    - Guiones largos, guiones medios y signos menos (—, –, −) -> -
+    - Símbolos decorativos o fuentes extraídas como notas/mojibake (♫, ï, etc.)
+    - Espacios duros (\u00a0, \u202f), zero-width spaces (\u200b), soft hyphens (\xad)
+    """
+    if not text:
+        return ""
+    # Espacios especiales y caracteres invisibles
+    text = text.replace('\u00a0', ' ').replace('\u202f', ' ').replace('\u200b', '').replace('\xad', '')
+    
+    # Comillas tipográficas a estándar
+    text = re.sub(r'[“”„«»]', '"', text)
+    text = re.sub(r'[‘’‚‹›]', "'", text)
+    
+    # Guiones y signos menos
+    text = re.sub(r'[—–−]', '-', text)
+    
+    # Símbolos residuales de codificación o mojibake
+    text = re.sub(r'[♫ï\ufffd\x00-\x08\x0b\x0c\x0e-\x1f]', '', text)
+    
+    return text
+
+
 def clean_hyphenation_and_newlines(raw_text: str) -> str:
     """
     Reconstruye palabras partidas por guion al final de línea (de-hyphenation)
-    y normaliza los saltos de línea sin romper párrafos legítimos ni listas.
+    y normaliza los saltos de línea sin romper párrafos legítimos, tablas ni listas.
     
     Ejemplos:
       - 'me-\\ntabolismo' -> 'metabolismo'
@@ -17,33 +44,53 @@ def clean_hyphenation_and_newlines(raw_text: str) -> str:
     if not raw_text:
         return ""
     
-    # 1. Unir palabras separadas por guion al final de línea:
-    # Coincide con letra + guion + salto de línea + espacios opcionales + letra
-    text = re.sub(r'([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ])-\s*\n\s*([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ])', r'\1\2', raw_text)
+    # 0. Limpieza tipográfica y de mojibake
+    text = clean_unicode_artifacts(raw_text)
     
-    # 2. Reemplazar saltos de línea simples dentro de un mismo párrafo por espacios,
-    # preservando párrafos dobles (\n\n), listas (- o * o 1.) y encabezados (#)
+    # 1. Unir palabras separadas por guion al final de línea:
+    text = re.sub(r'([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ])-\s*\n\s*([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ])', r'\1\2', text)
+    
+    # 2. Reemplazar saltos de línea dentro de párrafos continuos pero respetando
+    # listas cortas, encabezados y oraciones que terminan en punto o dos puntos.
     lines = text.split('\n')
     processed_lines = []
     
-    for i, line in enumerate(lines):
+    for line in lines:
         stripped = line.strip()
-        # Si la línea está vacía, es encabezado o viñeta de lista, se respeta tal cual
-        if (
-            not stripped 
-            or stripped.startswith(('#', '-', '*', '>', '|')) 
-            or re.match(r'^\d+[\.\)]\s+', stripped)
-        ):
+        if not stripped:
+            continue
+            
+        # Elementos estructurales que nunca se deben concatenar
+        is_structural = (
+            stripped.startswith(('#', '-', '*', '>', '|', '•'))
+            or bool(re.match(r'^\d+[\.\)]\s+', stripped))
+            or (stripped.isupper() and len(stripped) <= 40)
+            or bool(re.match(r'^Vitamina\s+[A-Z0-9]+', stripped, re.IGNORECASE))
+        )
+        
+        if is_structural:
             processed_lines.append(stripped)
         else:
-            # Si la línea anterior era de texto continuo, unir con espacio
-            if processed_lines and processed_lines[-1] and not processed_lines[-1].startswith(('#', '-', '*', '>', '|')):
-                processed_lines[-1] = f"{processed_lines[-1]} {stripped}"
+            if processed_lines:
+                prev = processed_lines[-1]
+                # Si la línea anterior era estructural o terminaba en signo de puntuación fuerte (. : ? !)
+                # mantenerla como línea independiente para no crear frases gigantes sin sentido.
+                prev_ends_sentence = prev.endswith(('.', ':', '?', '!'))
+                prev_is_structural = (
+                    prev.startswith(('#', '-', '*', '>', '|', '•'))
+                    or bool(re.match(r'^\d+[\.\)]\s+', prev))
+                    or (prev.isupper() and len(prev) <= 40)
+                    or bool(re.match(r'^Vitamina\s+[A-Z0-9]+', prev, re.IGNORECASE))
+                )
+                
+                if prev_ends_sentence or prev_is_structural:
+                    processed_lines.append(stripped)
+                else:
+                    processed_lines[-1] = f"{prev} {stripped}"
             else:
                 processed_lines.append(stripped)
                 
     result = '\n'.join(processed_lines)
-    # Limpiar espacios horizontales múltiples
     result = re.sub(r'[ \t]+', ' ', result)
     return result.strip()
 
