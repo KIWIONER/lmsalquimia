@@ -50,7 +50,7 @@ Siguiendo el marco de trabajo **`code-refinement-suite`**, todo hito o módulo t
 | **Fase 5: Carga e Indexación (Prefect & pgvector)** | `5.4` | Regresión Global y Validación Idempotencia | ✅ Completado | 22 passed & Lint 0 (Código 0) |
 | **Fase 6: Machine Learning & Cerebro Evaluador** | `6.1` | Clasificador Binario de Calidad (Scikit-Learn) | ⏳ Pendiente | Pytest test_classifier_fit |
 | **Fase 6: Machine Learning & Cerebro Evaluador** | `6.2` | Calibrador de Dificultad & Muestreador Estratificado | ⏳ Pendiente | Pytest test_quiz_stratifier |
-| **Fase 6: Machine Learning & Cerebro Evaluador** | `6.3` | Golden Dataset de Control (20 Preguntas Clínicas) | ⏳ Pendiente | Validación sintáctica y clínica |
+| **Fase 6: Machine Learning & Cerebro Evaluador** | `6.3` | Quizzes Tipo Test Oficiales & Split 70/30 | ⏳ Pendiente | 70 Train + 30 Test verificados |
 | **Fase 6: Machine Learning & Cerebro Evaluador** | `6.4` | Regresión Global y Validación Cerebro Evaluador | ⏳ Pendiente | Pytest suite completa + Lint |
 
 ---
@@ -384,15 +384,26 @@ flowchart LR
 
 ---
 
-### 🔹 [ ] PASO 6.3: Crear el Golden Dataset Clínico de Control (20 Preguntas)
+### 🔹 [ ] PASO 6.3: Generador de Quizzes Tipo Test Oficiales y Partición Train/Test (70/30)
 - **Estado:** `PENDIENTE` ⏳
 - **Fecha de Validación:** —
-* **Objetivo:** Definir el dataset de referencia inmutable con 20 preguntas tipo test y casos clínicos supervisados de Nutrición y Dietética, con 4 opciones, clave correcta, dificultad asignada y "Gema de Sabiduría".
-* **Archivo de Destino:** `cerebro-py/tests/fixtures/golden_dataset.jsonl`
+* **Objetivo:** Generar baterías de preguntas tipo test de opción múltiple (4 opciones A, B, C, D) con explicaciones pedagógicas cortas (2-3 líneas) basadas en los exámenes oficiales del CFGS Dietética y Pruebas Libres, dividiendo el conjunto en 70% para entrenamiento (`train_quiz_70.jsonl`) y 30% para testeo ciego (`test_quiz_30.jsonl`).
+* **Distribución de Tipologías Oficiales de Examen:**
+  1. **Clasificación y Bioquímica (30%):** Familias de lípidos, tipos de glúcidos, vitaminas hidro/liposolubles.
+  2. **Funciones Fisiológicas y Mecanismos (25%):** Absorción, funciones de la fibra, destinos metabólicos.
+  3. **De Exclusión ("Opción INCORRECTA" / "NO corresponde") (20%):** Detección de distractores y criterios clínicos.
+  4. **Valores Cuantitativos y Rangos (15%):** Porcentajes calóricos (50-60%), kcal/g, recomendaciones basales.
+  5. **Mini-Casos Clínicos Prácticos (10%):** Elección de menús o alimentos adaptados a patologías o perfiles calóricos.
+* **Archivos de Destino:**
+  - `cerebro-py/schemas/quiz.py` (Esquema Pydantic para preguntas tipo test con A/B/C/D y explicación corta)
+  - `cerebro-py/tests/fixtures/golden_dataset.jsonl` (20 preguntas canónicas de referencia inmutable)
+  - `data/datasets/alimentacion-equilibrada/quizzes/train_quiz_70.jsonl`
+  - `data/datasets/alimentacion-equilibrada/quizzes/test_quiz_30.jsonl`
 * **Acción de Ejecución:**
-  Escribir las 20 preguntas canónicas en formato JSONL y validar su estructura con Pydantic.
+  Implementar el sintetizador estratificado de quizzes tipo test y su generador por lotes de 100 preguntas (70 train / 30 test).
 * **Comando de Verificación Fáctica:**
-  `PYTHONPATH=cerebro-py cerebro-py/.venv/bin/python -c "import json; lines = open('cerebro-py/tests/fixtures/golden_dataset.jsonl').readlines(); assert len(lines) == 20; print('OK')"`
+  `PYTHONPATH=cerebro-py cerebro-py/.venv/bin/python -c "import json; t = open('data/datasets/alimentacion-equilibrada/quizzes/train_quiz_70.jsonl').readlines(); e = open('data/datasets/alimentacion-equilibrada/quizzes/test_quiz_30.jsonl').readlines(); assert len(t) == 70 and len(e) == 30; print('OK')"`
+* **Criterio de Aceptación:** Partición 70/30 verificada con formato canónico tipo test y código de salida 0.
 * **Criterio de Aceptación:** 20 registros íntegros con código de salida 0.
 
 ---
@@ -524,15 +535,26 @@ flowchart LR
 
 ---
 
-### 🔹 [ ] PASO 6.3: Crear el Golden Dataset Clínico de Control (20 Preguntas)
+### 🔹 [ ] PASO 6.3: Generador de Quizzes Tipo Test Oficiales y Partición Train/Test (70/30)
 - **Estado:** `PENDIENTE` ⏳
 - **Fecha de Validación:** —
-* **Objetivo:** Definir el dataset de referencia inmutable con 20 preguntas tipo test y casos clínicos supervisados de Nutrición y Dietética, con 4 opciones, clave correcta, dificultad asignada y "Gema de Sabiduría".
-* **Archivo de Destino:** `cerebro-py/tests/fixtures/golden_dataset.jsonl`
+* **Objetivo:** Generar baterías de preguntas tipo test de opción múltiple (4 opciones A, B, C, D) con explicaciones pedagógicas cortas (2-3 líneas) basadas en los exámenes oficiales del CFGS Dietética y Pruebas Libres, dividiendo el conjunto en 70% para entrenamiento (`train_quiz_70.jsonl`) y 30% para testeo ciego (`test_quiz_30.jsonl`).
+* **Distribución de Tipologías Oficiales de Examen:**
+  1. **Clasificación y Bioquímica (30%):** Familias de lípidos, tipos de glúcidos, vitaminas hidro/liposolubles.
+  2. **Funciones Fisiológicas y Mecanismos (25%):** Absorción, funciones de la fibra, destinos metabólicos.
+  3. **De Exclusión ("Opción INCORRECTA" / "NO corresponde") (20%):** Detección de distractores y criterios clínicos.
+  4. **Valores Cuantitativos y Rangos (15%):** Porcentajes calóricos (50-60%), kcal/g, recomendaciones basales.
+  5. **Mini-Casos Clínicos Prácticos (10%):** Elección de menús o alimentos adaptados a patologías o perfiles calóricos.
+* **Archivos de Destino:**
+  - `cerebro-py/schemas/quiz.py` (Esquema Pydantic para preguntas tipo test con A/B/C/D y explicación corta)
+  - `cerebro-py/tests/fixtures/golden_dataset.jsonl` (20 preguntas canónicas de referencia inmutable)
+  - `data/datasets/alimentacion-equilibrada/quizzes/train_quiz_70.jsonl`
+  - `data/datasets/alimentacion-equilibrada/quizzes/test_quiz_30.jsonl`
 * **Acción de Ejecución:**
-  Escribir las 20 preguntas canónicas en formato JSONL y validar su estructura con Pydantic.
+  Implementar el sintetizador estratificado de quizzes tipo test y su generador por lotes de 100 preguntas (70 train / 30 test).
 * **Comando de Verificación Fáctica:**
-  `PYTHONPATH=cerebro-py cerebro-py/.venv/bin/python -c "import json; lines = open('cerebro-py/tests/fixtures/golden_dataset.jsonl').readlines(); assert len(lines) == 20; print('OK')"`
+  `PYTHONPATH=cerebro-py cerebro-py/.venv/bin/python -c "import json; t = open('data/datasets/alimentacion-equilibrada/quizzes/train_quiz_70.jsonl').readlines(); e = open('data/datasets/alimentacion-equilibrada/quizzes/test_quiz_30.jsonl').readlines(); assert len(t) == 70 and len(e) == 30; print('OK')"`
+* **Criterio de Aceptación:** Partición 70/30 verificada con formato canónico tipo test y código de salida 0.
 * **Criterio de Aceptación:** 20 registros íntegros con código de salida 0.
 
 ---
