@@ -28,3 +28,10 @@ pnpm-debug.log*
 .gemini/
 
 .astro/
+
+# Python
+cerebro-py/.venv/
+__pycache__/
+*.py[cod]
+*.class
+.pytest_cache/

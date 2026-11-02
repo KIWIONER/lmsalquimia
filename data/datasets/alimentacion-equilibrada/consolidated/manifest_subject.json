@@ -1,0 +1,12 @@
+{
+  "asignatura": "alimentacion-equilibrada",
+  "unidades_procesadas": [
+    "UD1",
+    "UD2"
+  ],
+  "total_unidades": 2,
+  "total_paginas_pedagogicas": 138,
+  "total_micro_chunks_rag": 184,
+  "total_pares_chatml_sft": 184,
+  "total_palabras_corpus": 49915
+}

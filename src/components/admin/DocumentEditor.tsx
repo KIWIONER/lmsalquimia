@@ -1,5 +1,5 @@
 'use client';
-
+import DatasetViewerModal from './DatasetViewerModal';
 
 function extractAIText(data: any): string {
     if (!data) return "";
@@ -234,7 +234,7 @@ const DocumentEditor = () => {
         }
         return false;
     });
-
+    const [isDatasetModalOpen, setIsDatasetModalOpen] = useState(false);
     const togglePdfSync = useCallback((val?: boolean) => {
         setPdfSyncEnabled(prev => {
             const next = typeof val === "boolean" ? val : !prev;
@@ -735,6 +735,13 @@ const DocumentEditor = () => {
                         </div>
                     </a>
                 </div>
+                <button
+                    onClick={() => setIsDatasetModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-slate-900 text-white font-black text-xs hover:bg-medical-green-600 transition-all shadow-sm flex items-center gap-2"
+                    >
+                    <span>🤖</span>
+                    <span>Datasets ML & Cerebro</span>
+                </button>
 
                 {/* ACCIONES Y ESTADO - DERECHA */}
                 <div className="flex items-center gap-3">
@@ -1365,6 +1372,13 @@ const DocumentEditor = () => {
             </div>,
             document.body
         )}
+        {/* MODAL VISOR DE DATASETS ML & CEREBRO */}
+        <DatasetViewerModal
+            isOpen={isDatasetModalOpen}
+            onClose={() => setIsDatasetModalOpen(false)}
+            asignatura="alimentacion-equilibrada"
+            unit="UD1"
+        />
         </div>
         </AdminProtectedRoute>
     );
