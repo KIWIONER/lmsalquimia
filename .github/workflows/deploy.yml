@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Build Next.js
 
 on:
   push:
@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
@@ -31,18 +29,3 @@ jobs:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL || 'https://ybqzcxabblyzqhezanaf.supabase.co' }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
           PUBLIC_N8N_CEREBRO_URL: ${{ secrets.PUBLIC_N8N_CEREBRO_URL || 'https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista' }}
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
