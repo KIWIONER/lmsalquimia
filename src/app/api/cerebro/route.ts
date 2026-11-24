@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const cerebroPyUrl = process.env.CEREBRO_PY_URL || "http://127.0.0.1:8055";
+    const cerebroPyUrl = process.env.CEREBRO_PY_URL || "http://127.0.0.1:8155";
 
     // 1. Enrutar generación de evaluaciones al microservicio Python
     if (body.action === "generate_quiz") {
@@ -32,6 +32,11 @@ export async function POST(request: Request) {
       }
     }
 
+    /**
+     * @deprecated Fallback legacy a webhook n8n.
+     * Retirada planificada en Fases 1-2 al activar AWS SQS/Lambda + LLM Router + Qdrant.
+     * Se mantiene temporalmente en Fase 0 únicamente para capturar el baseline comparativo.
+     */
     // 2. Chat del Tutor: Intentar Python Core con timeout rápido
     const webhookUrl =
       process.env.N8N_CEREBRO_URL ||

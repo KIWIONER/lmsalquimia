@@ -1,7 +1,9 @@
-name: Build Next.js
+name: CI & Build Alquimia LMS
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
@@ -9,23 +11,50 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-nextjs:
+    name: Type-check & Build Next.js
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout your repository using git
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Setup Node
+
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install dependencies
-        run: npm install
+          cache: 'npm'
+
+      - name: Install dependencies (deterministic)
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npm run lint
+
       - name: Build Next.js
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://ybqzcxabblyzqhezanaf.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_N8N_CEREBRO_URL: ${{ secrets.NEXT_PUBLIC_N8N_CEREBRO_URL || 'https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista' }}
-          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL || 'https://ybqzcxabblyzqhezanaf.supabase.co' }}
-          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
-          PUBLIC_N8N_CEREBRO_URL: ${{ secrets.PUBLIC_N8N_CEREBRO_URL || 'https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista' }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+          CEREBRO_PY_URL: ${{ secrets.CEREBRO_PY_URL || 'http://127.0.0.1:8055' }}
+
+  test-cerebro-py:
+    name: Unit Tests cerebro-py (Pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: cerebro-py/requirements.txt
+
+      - name: Install Python dependencies
+        run: pip install -r cerebro-py/requirements.txt
+
+      - name: Run Pytest suite
+        env:
+          PYTHONPATH: cerebro-py
+        run: pytest cerebro-py/tests/ -v

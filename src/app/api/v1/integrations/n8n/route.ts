@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+/**
+ * @deprecated Endpoint de integración legacy con n8n.
+ * Retirada definitiva planificada en Fases 1-2: la ingesta de PDFs y sincronización
+ * de tarjetas pasará a AWS S3 + SQS + Lambda (cerebro-py) + Qdrant.
+ */
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.ALQUIMIA_BACKEND_API_KEY || 'alquimia-n8n-sync-key-2026';

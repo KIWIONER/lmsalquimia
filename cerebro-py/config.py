@@ -21,5 +21,5 @@ N8N_CEREBRO_URL = os.getenv(
     os.getenv("PUBLIC_N8N_CEREBRO_URL", "https://cerebro.agencialquimia.com/webhook/cerebro-nutricionista")
 )
 
-PORT = int(os.getenv("CEREBRO_PY_PORT", "8055"))
+PORT = int(os.getenv("CEREBRO_PY_PORT", "8155"))
 HOST = os.getenv("CEREBRO_PY_HOST", "127.0.0.1")
