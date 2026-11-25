@@ -35,3 +35,8 @@ __pycache__/
 *.py[cod]
 *.class
 .pytest_cache/
+cerebro-py/evals/last_report.json
+
+# Testing
+test-results/
+playwright-report/

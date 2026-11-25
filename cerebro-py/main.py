@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from schemas.quiz import QuizGenerationRequest, QuizGenerationResponse
 from services.quiz_service import generate_adaptive_quiz
 from services.pdf_service import process_pdf_from_url
-from services.chat_service import stream_n8n_or_fallback
+from services.chat_service import stream_rag_tutor
 from config import HOST, PORT
 
 app = FastAPI(
@@ -71,11 +71,13 @@ async def chat_stream_endpoint(payload: dict):
     """Transmite la respuesta del Profesor en tiempo real vía Server-Sent Events."""
     query = payload.get("query") or payload.get("chatInput") or ""
     session_id = payload.get("sessionId") or "default"
+    user_id = payload.get("userId") or "anonymous"
+    rama = payload.get("ramaCientifica")
     if not query:
         raise HTTPException(status_code=400, detail="Query no proporcionada")
 
     return StreamingResponse(
-        stream_n8n_or_fallback(query, session_id),
+        stream_rag_tutor(query, session_id=session_id, user_id=user_id, rama_cientifica=rama),
         media_type="text/event-stream"
     )
 
@@ -84,13 +86,16 @@ async def chat_sync_endpoint(payload: dict):
     """Endpoint síncrono compatible con /api/cerebro si no se utiliza SSE."""
     query = payload.get("query") or payload.get("chatInput") or ""
     session_id = payload.get("sessionId") or "default"
+    user_id = payload.get("userId") or "anonymous"
+    rama = payload.get("ramaCientifica")
     if not query:
         raise HTTPException(status_code=400, detail="Query no proporcionada")
 
-    # Acumular tokens del stream para entregar respuesta síncrona
     import json
     collected = []
-    async for chunk in stream_n8n_or_fallback(query, session_id):
+    async for chunk in stream_rag_tutor(
+        query, session_id=session_id, user_id=user_id, rama_cientifica=rama
+    ):
         if chunk.startswith("data: ") and not chunk.startswith("data: [DONE]"):
             try:
                 data = json.loads(chunk[6:].strip())
