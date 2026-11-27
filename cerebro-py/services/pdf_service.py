@@ -16,6 +16,11 @@ async def process_pdf_from_url(pdf_url: str) -> List[Dict[str, Any]]:
             raise ValueError(f"No se pudo descargar el PDF de Storage: HTTP {res.status_code}")
         pdf_bytes = res.content
 
+    return extract_cards_from_pdf_bytes(pdf_bytes)
+
+
+def extract_cards_from_pdf_bytes(pdf_bytes: bytes) -> List[Dict[str, Any]]:
+    """Extrae tarjetas estructuradas en Markdown desde los bytes de un PDF usando PyMuPDF."""
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
     pages_data = pymupdf4llm.to_markdown(doc, page_chunks=True)
 

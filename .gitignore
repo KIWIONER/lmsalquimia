@@ -35,3 +35,15 @@ __pycache__/
 *.py[cod]
 *.class
 .pytest_cache/
+cerebro-py/evals/last_report.json
+
+# Testing
+test-results/
+playwright-report/
+
+# Terraform (evitar subir binarios de providers o secretos en .tfstate)
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+debug.log
