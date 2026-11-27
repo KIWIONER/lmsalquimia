@@ -1,7 +1,7 @@
 # Implementation Plan — Fase 3: Seguridad, Datos y Calidad de Producción
 
 > **Estrategia asociada:** [`fase-3-seguridad-datos-calidad-produccion.md`](./fase-3-seguridad-datos-calidad-produccion.md)
-> **Documento Maestro:** [`CONTEXT.md`](../../CONTEXT.md)
+> **Documento Maestro:** [`CONTEXT.md`](../../../CONTEXT.md)
 > **Dominio:** Plataforma EdTech Interactiva de Ciencias de la Salud y Ciencias Exactas (Medicina, Nutrición, Química, Bioquímica y Física)
 > **Clasificación Code Refinement Suite:** **Nivel 3 — Complejidad Alta (Arquitectura / Módulo Crítico)** (`PACK_ARCHITECT ➔ PACK_PLANNER ➔ PACK_CODER ➔ PACK_AUDITOR`)
 

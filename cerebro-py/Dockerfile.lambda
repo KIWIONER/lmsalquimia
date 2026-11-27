@@ -10,6 +10,7 @@ COPY --from=builder /build/deps ${LAMBDA_TASK_ROOT}
 COPY schemas/ ${LAMBDA_TASK_ROOT}/schemas/
 COPY services/ ${LAMBDA_TASK_ROOT}/services/
 COPY flows/ ${LAMBDA_TASK_ROOT}/flows/
+COPY config.py ${LAMBDA_TASK_ROOT}/config.py
 COPY lambda_handler.py ${LAMBDA_TASK_ROOT}/lambda_handler.py
 
 CMD ["lambda_handler.handler"]

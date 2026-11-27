@@ -77,7 +77,7 @@ resource "aws_sqs_queue" "alquimia_jobs_dlq" {
 
 resource "aws_sqs_queue" "alquimia_jobs" {
   name                       = "${local.name_prefix}-async-jobs"
-  visibility_timeout_seconds = 360 # 6x timeout de Lambda (60s)
+  visibility_timeout_seconds = 360    # 6x timeout de Lambda (60s)
   message_retention_seconds  = 345600 # 4 días
   sqs_managed_sse_enabled    = true
 
@@ -131,9 +131,8 @@ resource "aws_lambda_function" "alquimia_worker" {
   package_type  = "Image"
   image_uri     = local.lambda_uri
 
-  timeout                        = 60
-  memory_size                    = 512
-  reserved_concurrent_executions = 5 # Límite FinOps anti-loop
+  timeout     = 60
+  memory_size = 512
 
   environment {
     variables = {
@@ -155,10 +154,14 @@ resource "aws_lambda_event_source_mapping" "sqs_to_lambda" {
   function_name           = aws_lambda_function.alquimia_worker.arn
   batch_size              = 5
   function_response_types = ["ReportBatchItemFailures"]
+
+  scaling_config {
+    maximum_concurrency = 5 # Límite FinOps compatible con cuentas nuevas (cuota >= 10)
+  }
 }
 
 # ==============================================================================
-# 4. Control FinOps — AWS Budgets (Alerta Mensual 5 EUR)
+# 4. Control FinOps — AWS Budgets (Alerta Mensual 5 USD)
 # ==============================================================================
 resource "aws_budgets_budget" "monthly_cost" {
   count = var.budget_alert_email != "" ? 1 : 0
@@ -166,7 +169,7 @@ resource "aws_budgets_budget" "monthly_cost" {
   name         = "${local.name_prefix}-monthly-budget"
   budget_type  = "COST"
   limit_amount = "5"
-  limit_unit   = "EUR"
+  limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
   notification {

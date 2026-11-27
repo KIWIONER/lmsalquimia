@@ -117,6 +117,8 @@ lmsalquimia/
 │   └── tests/                      # Suite unitaria Pytest
 ├── supabase/                       # Esquema SQL (evolucionará a supabase/migrations/ + RLS)
 ├── docs/
+│   ├── architecture/               # [Fase 4] Registro de Decisiones Técnicas (decisions.md)
+│   ├── assets/                     # [Fase 4] Capturas verificables (UI, CI/Evals, Health/Infra)
 │   └── estrategia/                 # Guías de arquitectura e Implementation Plans (Fases 0–4)
 ├── .github/workflows/              # Pipelines CI/CD en GitHub Actions
 ├── infra/                          # [Fase 1] Terraform AWS (S3, SQS, DLQ, Lambda, IAM)
@@ -133,10 +135,10 @@ lmsalquimia/
 | Fase | Enfoque Principal | Estado | Documentación |
 | :--- | :--- | :--- | :--- |
 | **Fase 0** | Saneamiento legacy (Astro), Baseline cuantitativo, `.env.example`, CI Quick Win y `README.md` v1 | **Completada** | [Estrategia](docs/estrategia/fase-0-saneamiento-baseline/fase-0-saneamiento-baseline.md) · [Implementation Plan](docs/estrategia/fase-0-saneamiento-baseline/implementation-plan.md) · [Baseline](docs/estrategia/fase-0-saneamiento-baseline/baseline-metrics.md) |
-| **Fase 1** | Backend Asíncrono en AWS (S3 Presigned + SQS/DLQ + Lambda Python) + Terraform + IAM mínimo privilegio | **Implementada (local)** | [Estrategia](docs/estrategia/fase-1-backend-asincrono-aws-terraform.md) · [Implementation Plan](docs/estrategia/fase-1-implementation-plan.md) |
-| **Fase 2** | Ingeniería de IA Observable y Evaluable (Zod/Pydantic + Fallback Multi-LLM + **Qdrant RAG Híbrido** + Redis + Langfuse + 28 Evals + retirada definitiva de `n8n`) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-2-ingenieria-ia-observable-evaluable.md) · [Implementation Plan](docs/estrategia/fase-2-implementation-plan.md) |
-| **Fase 3** | Seguridad, Datos y Calidad de Producción (RLS auditado + `supabase/migrations/` + Vitest/Pytest/Playwright en CI + `/api/health` + logs JSON) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-3-seguridad-datos-calidad-produccion.md) · [Implementation Plan](docs/estrategia/fase-3-implementation-plan.md) |
-| **Fase 4** | Presentación de Ingeniería CTO-Ready (`README.md` definitivo, ADRs de Trade-offs y métricas reales *Antes vs. Después*) | Pendiente | [Estrategia](docs/estrategia/fase-4-presentacion-ingenieria-cto.md) |
+| **Fase 1** | Backend Asíncrono en AWS (S3 Presigned + SQS/DLQ + Lambda Python) + Terraform + IAM mínimo privilegio | **Implementada (local)** | [Estrategia](docs/estrategia/fase-1-backend-asincrono-aws-terraform/fase-1-backend-asincrono-aws-terraform.md) · [Implementation Plan](docs/estrategia/fase-1-backend-asincrono-aws-terraform/fase-1-implementation-plan.md) |
+| **Fase 2** | Ingeniería de IA Observable y Evaluable (Zod/Pydantic + Fallback Multi-LLM + **Qdrant RAG Híbrido** + Redis + Langfuse + 28 Evals + retirada definitiva de `n8n`) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-2-ingenieria-ia-observable-evaluable/fase-2-ingenieria-ia-observable-evaluable.md) · [Implementation Plan](docs/estrategia/fase-2-ingenieria-ia-observable-evaluable/fase-2-implementation-plan.md) |
+| **Fase 3** | Seguridad, Datos y Calidad de Producción (RLS auditado + `supabase/migrations/` + Vitest/Pytest/Playwright en CI + `/api/health` + logs JSON) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-3-seguridad-datos-calidad-produccion/fase-3-seguridad-datos-calidad-produccion.md) · [Implementation Plan](docs/estrategia/fase-3-seguridad-datos-calidad-produccion/fase-3-implementation-plan.md) |
+| **Fase 4** | Presentación de Ingeniería CTO-Ready (`README.md` definitivo, ADRs de Trade-offs y métricas reales *Antes vs. Después*) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-4-presentacion-ingenieria-cto/fase-4-presentacion-ingenieria-cto.md) · [Implementation Plan](docs/estrategia/fase-4-presentacion-ingenieria-cto/fase-4-implementation-plan.md) · [ADRs](docs/architecture/decisions.md) |
 
 ---
 

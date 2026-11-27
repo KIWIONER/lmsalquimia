@@ -1,7 +1,7 @@
 # Implementation Plan — Fase 1: Backend Asíncrono en AWS + Terraform (IaC)
 
 > **Estrategia asociada:** [`fase-1-backend-asincrono-aws-terraform.md`](./fase-1-backend-asincrono-aws-terraform.md)
-> **Documento Maestro:** [`CONTEXT.md`](../../CONTEXT.md)
+> **Documento Maestro:** [`CONTEXT.md`](../../../CONTEXT.md)
 > **Dominio:** Plataforma EdTech Interactiva de Ciencias de la Salud y Ciencias Exactas (Medicina, Nutrición, Química, Bioquímica y Física)
 > **Clasificación Code Refinement Suite:** **Nivel 3 — Complejidad Alta (Arquitectura / Módulo Crítico)** (`PACK_ARCHITECT ➔ PACK_PLANNER ➔ PACK_CODER ➔ PACK_AUDITOR`)
 

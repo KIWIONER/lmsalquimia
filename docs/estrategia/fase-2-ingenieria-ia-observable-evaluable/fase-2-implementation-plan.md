@@ -1,7 +1,7 @@
 # Implementation Plan — Fase 2: Ingeniería de IA Observable, Evaluable y RAG Híbrido (Qdrant)
 
 > **Estrategia asociada:** [`fase-2-ingenieria-ia-observable-evaluable.md`](./fase-2-ingenieria-ia-observable-evaluable.md)
-> **Documento Maestro:** [`CONTEXT.md`](../../CONTEXT.md)
+> **Documento Maestro:** [`CONTEXT.md`](../../../CONTEXT.md)
 > **Dominio:** Plataforma EdTech Interactiva de Ciencias de la Salud y Ciencias Exactas (Medicina, Nutrición [vertical piloto], Química, Bioquímica y Física)
 > **Clasificación Code Refinement Suite:** **Nivel 4 — Sistema Cognitivo / RAG Evaluable y Estado Persistente (Muy Alta Complejidad)** (`PACK_ARCHITECT + Threat Modeling OWASP LLM/FMEA ➔ PACK_PLANNER + Invariantes ➔ PACK_CODER + EDD/Wiring Check ➔ PACK_AUDITOR + Red Teaming IA`)
 
