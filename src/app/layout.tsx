@@ -1,10 +1,6 @@
 import './globals.css';
 import React from 'react';
-import Link from 'next/link';
-import SidebarHierarchy from '@/components/SidebarHierarchy';
-import ChatDrawer from '@/components/ChatDrawer';
-import SidebarCollapseButton from '@/components/SidebarCollapseButton';
-import BottomNavigation from '@/components/BottomNavigation';
+import AppShell from '@/components/AppShell';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -30,96 +26,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const navLinks = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Planificación', href: '/planificacion' },
-    { name: 'Calendario', href: '/calendario' },
-    { name: 'Biblioteca', href: '/biblioteca' },
-    { name: 'Evaluación', href: '/evaluacion' },
-    { name: 'Historial', href: '/historial' },
-    { name: 'Admin', href: '/admin' },
-  ];
-
   return (
     <html lang="es" className={inter.variable}>
-      <body className={`h-screen overflow-hidden flex flex-col bg-slate-50 ${inter.className}`}>
-        {/* Global Navbar Responsivo */}
-        <nav className="h-16 border-b border-slate-200 bg-white flex items-center px-4 sm:px-6 justify-between shrink-0 z-50 shadow-sm relative">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-sm">
-              🏺
-            </div>
-            <span className="font-bold text-lg sm:text-xl tracking-tight text-slate-800 italic">
-              Alquimia <span className="text-medical-green-500 not-italic">LMS</span>
-            </span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="hover:text-medical-green-600 transition-all relative py-2"
-              >
-                {link.name}
-              </Link>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Alumno FP</span>
-                <span className="text-xs font-semibold text-slate-900">User Alquimia</span>
-              </div>
-              <Link
-                href="/login"
-                className="px-2.5 sm:px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all touch-target"
-              >
-                Acceso
-              </Link>
-            </div>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-400 shrink-0">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 sm:h-6 sm:w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </div>
-          </div>
-        </nav>
-
-        {/* 3-Pane Layout */}
-        <main className="flex flex-1 overflow-hidden pb-16 md:pb-0">
-          {/* Left Sidebar Adaptable para Móviles */}
-          <aside
-            id="primary-sidebar"
-            className="hidden md:flex w-[360px] shrink-0 z-40 shadow-xl shadow-slate-200/50 bg-white flex-col relative transition-all duration-500 ease-in-out overflow-visible"
-          >
-            <SidebarCollapseButton />
-            <SidebarHierarchy />
-          </aside>
-
-          {/* Center Content */}
-          <section className="flex-1 bg-slate-50 flex flex-col overflow-y-auto relative min-w-0">
-            {children}
-          </section>
-
-          {/* Right AI Drawer */}
-          <ChatDrawer />
-        </main>
-        
-        {/* Instagram-style Bottom Navigation for Mobile */}
-        <BottomNavigation />
+      <body className={inter.className}>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

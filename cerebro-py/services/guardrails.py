@@ -3,11 +3,11 @@ Guardrails de Seguridad Numérica, Dosificación Clínica y Anti-Inyección.
 LMS Alquimia - Fase 2: Ingeniería de IA Observable y Evaluable.
 """
 import re
-from typing import Tuple, List, Set
+from typing import Tuple, List, Set, Dict, Any
 
 # Patrón regex para capturar cifras asociadas a unidades nutricionales, clínicas y científicas
 NUMERICAL_DOSAGE_PATTERN = re.compile(
-    r"(\b\d+(?:[\.,]\d+)?)\s*(mg|µg|ug|mcg|g|kg|kcal|cal|ml|l|%|mmol/l|mol/l|mmol|mol|mmhg|pa|ui)\b",
+    r"(\b\d+(?:[\.,]\d+)?)\s*(°\s*[cf]|mg|µg|ug|mcg|g|kg|kcal|cal|ml|l|%|mmol/l|mol/l|mmol|mol|mmhg|pa|ui)\b",
     re.IGNORECASE,
 )
 
@@ -36,9 +36,44 @@ def extract_numerical_dosages(text: str) -> Set[str]:
     dosages = set()
     for val, unit in matches:
         norm_val = val.replace(",", ".")
-        norm_unit = unit.lower().replace("µg", "ug").replace("mcg", "ug")
+        norm_unit = re.sub(r"\s+", "", unit.lower()).replace("µg", "ug").replace("mcg", "ug")
         dosages.add(f"{norm_val}{norm_unit}")
     return dosages
+
+
+def validate_bidirectional_numerical_integrity(
+    source_text: str,
+    generated_text: str,
+) -> Dict[str, Any]:
+    """
+    Valida integridad numérica bidireccional entre el texto literal del PDF y la salida IA:
+    - Detecta cifras/unidades inventadas o alteradas (alucinación).
+    - Detecta cifras/unidades del PDF que desaparecieron en la salida (omisión silenciosa).
+    """
+    source_dosages = extract_numerical_dosages(source_text)
+    generated_dosages = extract_numerical_dosages(generated_text)
+
+    missing_in_output = sorted(source_dosages - generated_dosages)
+    invented_in_output = sorted(generated_dosages - source_dosages)
+
+    errors: List[str] = []
+    if missing_in_output:
+        errors.append(
+            f"Omisión clínica detectada: faltan cantidades del origen ({', '.join(missing_in_output)})."
+        )
+    if invented_in_output:
+        errors.append(
+            f"Discrepancia de seguridad: cantidades no respaldadas por el origen ({', '.join(invented_in_output)})."
+        )
+
+    return {
+        "ok": len(missing_in_output) == 0 and len(invented_in_output) == 0,
+        "missing_in_output": missing_in_output,
+        "invented_in_output": invented_in_output,
+        "source_dosages": sorted(source_dosages),
+        "generated_dosages": sorted(generated_dosages),
+        "errors": errors,
+    }
 
 
 def validate_numerical_integrity(

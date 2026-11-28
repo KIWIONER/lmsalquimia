@@ -5,6 +5,8 @@ import AIStudyButton from '@/components/AIStudyButton';
 import { getLibraryStructure } from '@/lib/books';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export interface LessonPageProps {
   params: Promise<{
     path?: string[];
@@ -77,6 +79,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
       .schema('nutricionista')
       .from('documentos')
       .select('id')
+      .eq('estado', 'publicado')
       .ilike('nombre', `%${unitNombre}%`)
       .limit(1)
       .single();

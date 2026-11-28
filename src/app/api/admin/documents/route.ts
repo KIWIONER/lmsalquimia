@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .schema("nutricionista")
       .from("documentos")
-      .select("id, nombre, carpeta, url, orden, contenido, tarjetas(id)")
+      .select("id, nombre, carpeta, url, orden, contenido, estado, verification_report, tarjetas(id)")
       .order("carpeta", { ascending: true })
       .order("nombre", { ascending: true });
 
@@ -41,6 +41,28 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ybqzcxabblyzqhezanaf.supabase.co";
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    if (session.role === "demo_teacher") {
+      if (action !== "structure") {
+        return NextResponse.json(
+          { error: "En modo Demo Profesor solo puedes probar el chunking en la unidad de muestra." },
+          { status: 403 }
+        );
+      }
+      const targetId = doc_id || id;
+      const { data: targetDoc } = await supabaseAdmin
+        .schema("nutricionista")
+        .from("documentos")
+        .select("carpeta")
+        .eq("id", targetId)
+        .maybeSingle();
+      if (!targetDoc || targetDoc.carpeta !== "demo-muestra") {
+        return NextResponse.json(
+          { error: "En modo Demo Profesor solo puedes procesar la unidad de muestra." },
+          { status: 403 }
+        );
+      }
+    }
 
     // 1. Auto-estructurar PDF con PyMuPDF (Tablas Markdown, OCR y coordenadas de página)
     if (action === "structure") {
@@ -95,7 +117,7 @@ export async function POST(request: NextRequest) {
       await supabaseAdmin
         .schema("nutricionista")
         .from("documentos")
-        .update({ contenido: joinedContent, updated_at: new Date().toISOString() })
+        .update({ contenido: joinedContent })
         .eq("id", targetDocId);
 
       const cardsToInsert = blocks.map((b, idx) => ({
@@ -182,6 +204,84 @@ export async function POST(request: NextRequest) {
       const { error } = await supabaseAdmin.schema("nutricionista").from("documentos").delete().eq("carpeta", folder);
       if (error) throw error;
       return NextResponse.json({ success: true });
+    }
+
+    // 6. Publicar Documento (Flujo Docente Fase B: borrador -> publicado + indexación Qdrant)
+    if (action === "publish_document" && id) {
+      const { data: doc, error: docErr } = await supabaseAdmin
+        .schema("nutricionista")
+        .from("documentos")
+        .select("id, nombre, carpeta")
+        .eq("id", id)
+        .single();
+      if (docErr || !doc) throw docErr || new Error("Documento no encontrado");
+
+      const { data: cards, error: cardsErr } = await supabaseAdmin
+        .schema("nutricionista")
+        .from("tarjetas")
+        .select("id, titulo, contenido, orden, needs_review")
+        .eq("documento_id", id)
+        .order("orden", { ascending: true });
+      if (cardsErr) throw cardsErr;
+
+      if (!cards || cards.length === 0) {
+        return NextResponse.json(
+          { error: "No se puede publicar una unidad sin tarjetas." },
+          { status: 400 }
+        );
+      }
+
+      const pendingCards = cards.filter((c: any) => Boolean(c.needs_review));
+      if (pendingCards.length > 0) {
+        return NextResponse.json(
+          {
+            error: `No se puede publicar: quedan ${pendingCards.length} tarjeta(s) pendiente(s) de verificación docente.`,
+            pendingCount: pendingCards.length,
+          },
+          { status: 400 }
+        );
+      }
+
+      let qdrantIndexed = false;
+      let indexedCount = 0;
+      let qdrantWarning: string | null = null;
+      const cerebroPyUrl = process.env.CEREBRO_PY_URL || "http://127.0.0.1:8155";
+      try {
+        const vecRes = await fetch(`${cerebroPyUrl}/api/vector/index-document`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            documento_id: doc.id,
+            asignatura: doc.carpeta || "general",
+            documento_origen: doc.nombre,
+            cards: cards || [],
+          }),
+          signal: AbortSignal.timeout(8000),
+        });
+        if (vecRes.ok) {
+          const vecData = await vecRes.json();
+          qdrantIndexed = Boolean(vecData.success);
+          indexedCount = Number(vecData.indexed || 0);
+          if (!qdrantIndexed && vecData.error) qdrantWarning = String(vecData.error);
+        }
+      } catch (vecErr: unknown) {
+        qdrantWarning = vecErr instanceof Error ? vecErr.message : "Qdrant no disponible";
+      }
+
+      const { error: pubErr } = await supabaseAdmin
+        .schema("nutricionista")
+        .from("documentos")
+        .update({ estado: "publicado" })
+        .eq("id", id);
+      if (pubErr) throw pubErr;
+
+      return NextResponse.json({
+        success: true,
+        estado: "publicado",
+        qdrantIndexed,
+        indexedCount,
+        qdrantWarning,
+      });
     }
 
     return NextResponse.json({ error: "Acción no válida" }, { status: 400 });

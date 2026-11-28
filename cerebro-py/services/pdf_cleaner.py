@@ -26,8 +26,19 @@ def clean_unicode_artifacts(text: str) -> str:
     # Guiones y signos menos
     text = re.sub(r'[—–−]', '-', text)
     
+    # Símbolos decorativos de PDF (Wingdings/Dingbats/flechas de retorno)
+    text = text.replace('↵', ': ')
+    text = re.sub(r'[✔✓✅✖✗✘★☆✦✧➤➢➣▪▫●○◆◇■□▲△▼▽►◄]', ' ', text)
+
+    # Rango Private Use Area (U+E000-U+F8FF) usado por fuentes embebidas de Word/PDF
+    text = re.sub(r'[\uE000-\uF8FF]+', ' ', text)
+
     # Símbolos residuales de codificación o mojibake
     text = re.sub(r'[♫ï\ufffd\x00-\x08\x0b\x0c\x0e-\x1f]', '', text)
+    # Eliminar etiquetas <u> / </u> de pymupdf4llm (evita subrayado en cascada en TipTap)
+    text = re.sub(r'</?u\b[^>]*>', '', text, flags=re.IGNORECASE)
+    # Colapsar múltiples espacios horizontales SOLO entre palabras (preserva sangría de listas '    - ')
+    text = re.sub(r'(?<=[^\s])[ \t]{2,}', ' ', text)
     
     return text
 

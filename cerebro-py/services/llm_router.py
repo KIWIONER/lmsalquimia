@@ -4,7 +4,18 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Type
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from config import GEMINI_API_KEY, GEMINI_MODEL, OPENAI_API_KEY, OPENAI_FALLBACK_MODEL
+from config import (
+    GEMINI_API_KEY,
+    GEMINI_MODEL,
+    LLM_MODE,
+    LOCAL_LLM_API_KEY,
+    LOCAL_LLM_MODEL,
+    LOCAL_LLM_NUM_CTX,
+    LOCAL_LLM_TIMEOUT_S,
+    LOCAL_LLM_URL,
+    OPENAI_API_KEY,
+    OPENAI_FALLBACK_MODEL,
+)
 from schemas.llm import LLMRouterRequest, LLMRouterResponse
 from services.guardrails import detect_prompt_injection, validate_numerical_integrity
 from services.observability import LangfuseObserver, default_observer, estimate_cost_usd
@@ -86,7 +97,91 @@ async def _default_provider_caller(
                 "output_tokens": int(usage.get("completion_tokens", max(1, len(text) // 4))),
             }
 
+    if provider == "local_gpu":
+        messages = []
+        if req.system_prompt:
+            messages.append({"role": "system", "content": req.system_prompt})
+        messages.append({"role": "user", "content": req.prompt})
+
+        base_url = LOCAL_LLM_URL.rstrip("/")
+        # Si apunta a Ollama (:11434), usar /api/chat para aplicar options.num_ctx (ahorra ~2GB VRAM)
+        if ":11434" in base_url:
+            ollama_root = base_url[:-3] if base_url.endswith("/v1") else base_url
+            endpoint = f"{ollama_root}/api/chat"
+            async with httpx.AsyncClient(timeout=LOCAL_LLM_TIMEOUT_S) as client:
+                res = await client.post(
+                    endpoint,
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "stream": False,
+                        "options": {
+                            "temperature": req.temperature,
+                            "num_predict": req.max_tokens,
+                            "num_ctx": LOCAL_LLM_NUM_CTX,
+                        },
+                    },
+                )
+                if res.status_code >= 400:
+                    raise RuntimeError(f"Ollama Local GPU HTTP {res.status_code}: {res.text[:200]}")
+                data = res.json()
+                text = data["message"]["content"]
+                return {
+                    "text": text,
+                    "input_tokens": int(data.get("prompt_eval_count", max(1, len(req.prompt) // 4))),
+                    "output_tokens": int(data.get("eval_count", max(1, len(text) // 4))),
+                }
+
+        endpoint = f"{base_url}/chat/completions"
+        async with httpx.AsyncClient(timeout=LOCAL_LLM_TIMEOUT_S) as client:
+            res = await client.post(
+                endpoint,
+                headers={
+                    "Authorization": f"Bearer {LOCAL_LLM_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": req.temperature,
+                    "max_tokens": req.max_tokens,
+                },
+            )
+            if res.status_code >= 400:
+                raise RuntimeError(f"Local GPU LLM HTTP {res.status_code}: {res.text[:200]}")
+            data = res.json()
+            text = data["choices"][0]["message"]["content"]
+            usage = data.get("usage", {})
+            return {
+                "text": text,
+                "input_tokens": int(usage.get("prompt_tokens", max(1, len(req.prompt) // 4))),
+                "output_tokens": int(usage.get("completion_tokens", max(1, len(text) // 4))),
+            }
+
     raise RuntimeError(f"Proveedor no soportado: {provider}")
+
+
+def create_router_for_mode(
+    mode: Optional[str] = None,
+    provider_caller: Optional[ProviderCaller] = None,
+) -> "LLMRouter":
+    """Crea un LLMRouter configurado para GPU local (dev/pruebas) o API cloud (prod)."""
+    active_mode = (mode or LLM_MODE).strip().lower()
+    if active_mode == "local_gpu":
+        return LLMRouter(
+            primary_provider="local_gpu",
+            primary_model=LOCAL_LLM_MODEL,
+            fallback_provider="local_gpu",
+            fallback_model=LOCAL_LLM_MODEL,
+            provider_caller=provider_caller,
+        )
+    return LLMRouter(
+        primary_provider="gemini",
+        primary_model=GEMINI_MODEL,
+        fallback_provider="openai",
+        fallback_model=OPENAI_FALLBACK_MODEL,
+        provider_caller=provider_caller,
+    )
 
 
 class LLMRouter:

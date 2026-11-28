@@ -66,6 +66,81 @@ async def structure_pdf_endpoint(payload: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error procesando PDF: {str(e)}")
 
+
+@app.post("/api/pdf/structure-4layers")
+async def structure_pdf_4layers_endpoint(payload: dict):
+    """Procesa un PDF desde URL con el pipeline fiable de 4 capas y guardrail numérico."""
+    pdf_url = payload.get("pdf_url")
+    mode = payload.get("mode")
+    if not pdf_url:
+        raise HTTPException(status_code=400, detail="pdf_url es requerido")
+    try:
+        import httpx
+        from services.health_pdf_pipeline import process_pdf_with_4_layers
+
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            res = await client.get(pdf_url)
+            res.raise_for_status()
+            pdf_bytes = res.content
+
+        outcome = await process_pdf_with_4_layers(pdf_bytes, mode=mode)
+        cards = outcome.get("cards", [])
+        return {
+            "success": True,
+            "total": len(cards),
+            "cards": cards,
+            "report": outcome.get("report", {}),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error procesando PDF (4 capas): {str(e)}")
+
+
+@app.post("/api/vector/index-document")
+async def index_document_vectors(payload: dict):
+    """Indexa las tarjetas publicadas de un documento en Qdrant (best-effort)."""
+    import hashlib
+    from services.vector_repository import HybridVectorRecord, QdrantVectorRepository
+
+    documento_id = str(payload.get("documento_id") or "")
+    asignatura = str(payload.get("asignatura") or "general")
+    documento_origen = str(payload.get("documento_origen") or documento_id)
+    cards = payload.get("cards") or []
+
+    if not documento_id or not isinstance(cards, list):
+        raise HTTPException(status_code=400, detail="documento_id y cards son requeridos")
+
+    repo = QdrantVectorRepository()
+    try:
+        repo.ensure_collection()
+        indexed = 0
+        for idx, c in enumerate(cards):
+            title = str(c.get("titulo") or f"Tema #{idx + 1}")
+            body = str(c.get("contenido") or "")
+            markdown = f"## {title}\n{body}".strip()
+            if not markdown:
+                continue
+            card_id = str(c.get("id") or f"{documento_id}-{idx}")
+            content_hash = hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+            record = HybridVectorRecord(
+                id=card_id,
+                parent_id=documento_id,
+                rama_cientifica="nutricion",
+                asignatura=asignatura,
+                documento_origen=documento_origen,
+                unidad=title,
+                pagina_inicio=int(c.get("pagina") or 1),
+                pagina_fin=int(c.get("pagina") or 1),
+                contenido_markdown=markdown,
+                content_hash=content_hash,
+                embed_hash=content_hash,
+                metadata={"orden": int(c.get("orden") or idx), "titulo": title},
+            )
+            if repo.upsert_chunk(record):
+                indexed += 1
+        return {"success": True, "indexed": indexed, "total": len(cards)}
+    except Exception as e:
+        return {"success": False, "indexed": 0, "error": str(e)}
+
 @app.post("/api/chat/stream")
 async def chat_stream_endpoint(payload: dict):
     """Transmite la respuesta del Profesor en tiempo real vía Server-Sent Events."""

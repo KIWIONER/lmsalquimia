@@ -7,6 +7,7 @@ export interface Unit {
     carpeta: string;
     slug: string;
     completado?: boolean;
+    estado?: 'borrador' | 'publicado';
 }
 
 export interface Module {
@@ -37,7 +38,8 @@ export async function getLibraryStructure(userId: string = 'estudiante-demo'): P
     const { data: documents, error: docError } = await supabase
         .schema('nutricionista')
         .from('documentos')
-        .select('id, nombre, carpeta, url')
+        .select('id, nombre, carpeta, url, estado')
+        .eq('estado', 'publicado')
         .order('carpeta', { ascending: true })
         .order('nombre', { ascending: true });
 

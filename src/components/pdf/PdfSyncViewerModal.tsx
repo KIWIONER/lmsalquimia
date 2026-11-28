@@ -11,7 +11,7 @@ import {
     Minimize2
 } from "lucide-react";
 import { LessonBlock } from "../lesson/hooks/useLessonCards";
-import { PdfCanvasViewer } from "./PdfCanvasViewer";
+import { PdfCanvasViewer, resolvePdfViewerUrl } from "./PdfCanvasViewer";
 
 interface PdfSyncViewerModalProps {
     isOpen: boolean;
@@ -138,7 +138,7 @@ export const PdfSyncViewerModal: React.FC<PdfSyncViewerModalProps> = ({
                         </button>
 
                         <a
-                            href={pdfUrl}
+                            href={resolvePdfViewerUrl(pdfUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
