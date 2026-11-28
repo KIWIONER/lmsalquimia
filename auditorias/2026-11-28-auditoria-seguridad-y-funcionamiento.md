@@ -16,7 +16,7 @@
 | Exposición de secretos en variables cliente (`NEXT_PUBLIC_*`) | `src/` | **0 coincidencias** |
 
 ### Endurecimiento aplicado
-- `src/lib/auth/adminAuth.ts`: eliminados todos los valores *fallback* hardcodeados para `ADMIN_JWT_SECRET`, `ADMIN_EMAIL` y `ADMIN_PASSWORD` (comportamiento *fail-closed* si faltan variables de entorno), añadida comparación en tiempo constante (`crypto.timingSafeEqual`) y soporte para `DISABLE_DEMO_MODE=true`.
+- `src/lib/auth/adminAuth.ts`: eliminados todos los valores *fallback* hardcodeados para `ADMIN_JWT_SECRET`, `ADMIN_EMAIL` y `ADMIN_PASSWORD` (comportamiento *fail-closed* si faltan variables de entorno), añadida comparación en tiempo constante (`crypto.timingSafeEqual`) y modo Demo opt-in (`ENABLE_DEMO_MODE=true`).
 - `src/components/admin/LoginForm.tsx`: reemplazado placeholder de email real por placeholder genérico (`admin@ejemplo.com`).
 
 ---
@@ -60,4 +60,4 @@
 
 ## 4. Notas Operativas
 - En entorno local, `qdrant` figura como `error` en `/api/health` (`status: "degraded"`, HTTP `200`) mientras el contenedor local de Qdrant esté apagado; la publicación de unidades funciona en modo *best-effort* sin bloquear al profesor.
-- Para desactivar el modo Demo Profesor en producción basta con definir `DISABLE_DEMO_MODE=true` en las variables de entorno.
+- El modo Demo Profesor está desactivado por defecto en producción (*opt-in*); para habilitarlo en entornos de demostración basta con definir `ENABLE_DEMO_MODE=true` en las variables de entorno.
