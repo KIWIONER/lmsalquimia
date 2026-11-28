@@ -1,4 +1,5 @@
 'use client';
+import { ListOrdered } from 'lucide-react';
 import DatasetViewerModal from './DatasetViewerModal';
 
 function extractAIText(data: any): string {
@@ -77,7 +78,12 @@ const DocItem: React.FC<any> = ({ doc, isSelected, onSelect, onRename, onDelete 
                 ) : (
                     <div className="flex-1 flex items-center justify-between gap-2 overflow-hidden">
                         <div className="flex flex-col min-w-0" onClick={() => onSelect(doc)}>
-                            <span className="font-black text-[11px] uppercase tracking-wider cursor-pointer text-left break-words leading-tight text-slate-700 truncate">{doc.nombre}</span>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="font-black text-[11px] uppercase tracking-wider cursor-pointer text-left break-words leading-tight text-slate-700 truncate">{doc.nombre}</span>
+                                {doc.estado === 'borrador' && (
+                                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[7px] font-black uppercase tracking-wider shrink-0">Borrador</span>
+                                )}
+                            </div>
                             <span className={`text-[8px] font-bold uppercase tracking-widest mt-0.5 ${cardCount > 0 ? 'text-medical-green-600' : 'text-slate-300'}`}>
                                 {cardCount > 0 ? `${cardCount} temas listos` : 'Vacío (IA)'}
                             </span>
@@ -97,7 +103,7 @@ const DocItem: React.FC<any> = ({ doc, isSelected, onSelect, onRename, onDelete 
     );
 };
 
-const SortableIndexItem: React.FC<any> = ({ id, index, titulo, onSelect, isActive, isSelected, onToggleSelect, onDelete }) => {
+const SortableIndexItem: React.FC<any> = ({ id, index, titulo, needsReview, onSelect, isActive, isSelected, onToggleSelect, onDelete }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1, position: 'relative', zIndex: 10 };
     
@@ -113,23 +119,45 @@ const SortableIndexItem: React.FC<any> = ({ id, index, titulo, onSelect, isActiv
                 </button>
             </div>
 
-            <div className="flex items-center gap-2">
-                {/* QUICK DELETE (ROJO) */}
-                <button 
-                    onClick={(e) => { e.stopPropagation(); if(confirm('¿Borrar esta tarjeta?')) onDelete(id); }}
-                    className="opacity-0 group-hover/item:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                    title="Eliminar tarjeta"
-                >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-
-                <button onClick={onSelect} className={`flex-1 text-left py-2.5 px-4 rounded-xl flex items-start gap-4 transition-all border-2 ${isActive ? 'bg-medical-green-500 text-white border-medical-green-500 shadow-lg' : 'bg-white border-slate-50 text-slate-500 hover:border-slate-200 hover:shadow-sm'}`}>
-                    <span className={`flex-shrink-0 text-[10px] font-black w-6 h-6 rounded-lg flex items-center justify-center border mt-0.5 ${isActive ? 'bg-medical-green-600 border-medical-green-400' : 'bg-slate-50 border-slate-100'}`}>{index + 1}</span>
-                    <span className="text-[13px] font-bold leading-tight whitespace-normal break-words flex-1 tracking-tight">{titulo || 'Sin título'}</span>
+            <div
+                role="button"
+                tabIndex={0}
+                onClick={onSelect}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
+                className={`w-full text-left py-2.5 px-4 rounded-xl flex items-start gap-3 transition-all border-2 cursor-pointer ${
+                    isActive
+                        ? 'bg-medical-green-500 text-white border-medical-green-500 shadow-lg'
+                        : needsReview
+                            ? 'bg-orange-50/40 border-orange-200/80 text-slate-700 hover:border-orange-300 hover:shadow-sm'
+                            : 'bg-white border-slate-50 text-slate-500 hover:border-slate-200 hover:shadow-sm'
+                }`}
+            >
+                <span className={`flex-shrink-0 text-[10px] font-black w-6 h-6 rounded-lg flex items-center justify-center border mt-0.5 ${isActive ? 'bg-medical-green-600 border-medical-green-400' : 'bg-slate-50 border-slate-100'}`}>{index + 1}</span>
+                <span
+                    className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${
+                        needsReview
+                            ? 'bg-orange-500 ring-2 ring-white shadow-sm'
+                            : isActive
+                                ? 'bg-emerald-200 ring-2 ring-white/80'
+                                : 'bg-emerald-500'
+                    }`}
+                    title={needsReview ? 'Pendiente de revisión docente' : 'Verificada'}
+                />
+                <span className="text-[13px] font-bold leading-tight whitespace-normal break-words flex-1 tracking-tight">{titulo || 'Sin título'}</span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* QUICK DELETE (ROJO) */}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); if (confirm('¿Borrar esta tarjeta?')) onDelete(id); }}
+                        className={`opacity-0 group-hover/item:opacity-100 p-1 rounded-lg transition-all ${isActive ? 'text-white/80 hover:text-white hover:bg-white/15' : 'text-red-400 hover:text-red-600 hover:bg-red-50'}`}
+                        title="Eliminar tarjeta"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                     <div {...attributes} {...listeners} className={`p-1 cursor-grab active:cursor-grabbing transition-colors ${isActive ? 'text-medical-green-200 hover:text-white' : 'text-slate-300 hover:text-slate-500'}`}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 8h16M4 16h16" /></svg>
                     </div>
-                </button>
+                </div>
             </div>
         </div>
     );
@@ -138,6 +166,24 @@ const SortableIndexItem: React.FC<any> = ({ id, index, titulo, onSelect, isActiv
 const SortableCard = React.forwardRef<HTMLDivElement, any>(({ t, index, selectedCardId, setSelectedCardId, updateLocalTarjeta, deleteTarjeta, onSplitIA, previewModes, setPreviewModes, activeEditorRef, setActiveEditorState, isCollapsed, toggleCollapse }, ref) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: t.id });
     const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, position: 'relative', zIndex: 1 };
+    const titleRef = React.useRef<HTMLTextAreaElement | null>(null);
+    const markdownRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+    const resizeTextarea = (el: HTMLTextAreaElement | null) => {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;
+    };
+
+    React.useEffect(() => {
+        resizeTextarea(titleRef.current);
+    }, [t.titulo]);
+
+    React.useEffect(() => {
+        if (previewModes[t.id] === 'markdown' && !isCollapsed) {
+            resizeTextarea(markdownRef.current);
+        }
+    }, [t.contenido, previewModes, t.id, isCollapsed]);
 
     return (
         <div ref={setNodeRef} style={style} className="group/card relative scroll-mt-6" id={`card-item-${t.id}`}>
@@ -146,8 +192,29 @@ const SortableCard = React.forwardRef<HTMLDivElement, any>(({ t, index, selected
             
             <div className={`bg-white rounded-[3rem] border-2 transition-all p-12 ${selectedCardId === t.id ? 'border-medical-green-500 shadow-2xl scale-[1.02]' : 'border-slate-50 shadow-sm opacity-90'}`} onClick={() => setSelectedCardId(t.id)}>
                 <div className="mb-8 pb-8 border-b border-slate-50">
-                    <div className="flex items-center justify-between mb-6">
-                        <div {...attributes} {...listeners} className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black cursor-grab active:cursor-grabbing hover:bg-medical-green-600 transition-colors shrink-0">{index + 1}</div>
+                    <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
+                        <div className="flex items-center gap-2.5">
+                            <div {...attributes} {...listeners} className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black cursor-grab active:cursor-grabbing hover:bg-medical-green-600 transition-colors shrink-0">{index + 1}</div>
+                            {t.needs_review ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); updateLocalTarjeta(t.id, { needs_review: false }); }}
+                                    className="px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 text-[9px] font-black uppercase tracking-wider transition-all shadow-2xs"
+                                    title="Haz clic cuando hayas revisado esta tarjeta contra el PDF"
+                                >
+                                    Pendiente · Verificar ✓
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); updateLocalTarjeta(t.id, { needs_review: true }); }}
+                                    className="px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-[9px] font-bold uppercase tracking-wider transition-all"
+                                    title="Tarjeta verificada (clic para volver a marcar como pendiente)"
+                                >
+                                    Verificada ✓
+                                </button>
+                            )}
+                        </div>
                         
                         <div className="flex items-center gap-3">
                             <button onClick={(e) => { e.stopPropagation(); onSplitIA(t.id); }} className="p-2 rounded-xl border border-slate-100 bg-slate-50 text-medical-green-600 hover:bg-medical-green-500 hover:text-white transition-all shadow-sm" title="Perfeccionar con IA">
@@ -156,7 +223,27 @@ const SortableCard = React.forwardRef<HTMLDivElement, any>(({ t, index, selected
                             <button onClick={(e) => { e.stopPropagation(); toggleCollapse(t.id); }} className={`p-2 rounded-xl border transition-all ${isCollapsed ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'}`}>
                                 <svg className={`h-5 w-5 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M19 9l-7 7-7-7" /></svg>
                             </button>
-                            <button onClick={() => setPreviewModes((p: any) => ({ ...p, [t.id]: !p[t.id] }))} className="text-[10px] font-black bg-slate-50 px-6 py-2 rounded-xl border border-slate-100 hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest">{previewModes[t.id] ? 'Editor' : 'Preview'}</button>
+                            <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/70">
+                                {(['editor', 'markdown', 'preview'] as const).map((mode) => {
+                                    const currentMode = previewModes[t.id] === true ? 'preview' : (previewModes[t.id] || 'editor');
+                                    const isActiveMode = currentMode === mode;
+                                    const label = mode === 'editor' ? 'Editor' : mode === 'markdown' ? 'Markdown' : 'Preview';
+                                    return (
+                                        <button
+                                            key={mode}
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); setPreviewModes((p: any) => ({ ...p, [t.id]: mode })); }}
+                                            className={`text-[10px] font-black px-3 py-1.5 rounded-lg transition-all uppercase tracking-wider ${
+                                                isActiveMode
+                                                    ? 'bg-slate-900 text-white shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                             <button onClick={(e) => { e.stopPropagation(); deleteTarjeta(t.id); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
@@ -164,26 +251,49 @@ const SortableCard = React.forwardRef<HTMLDivElement, any>(({ t, index, selected
                     </div>
 
                     <textarea 
+                        ref={titleRef}
                         value={t.titulo || ''} 
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                             updateLocalTarjeta(t.id, { titulo: e.target.value });
-                            e.target.style.height = 'auto';
-                            e.target.style.height = e.target.scrollHeight + 'px';
+                            resizeTextarea(e.target);
                         }} 
                         rows={1}
                         className="w-full bg-transparent border-none focus:outline-none font-bold text-2xl text-slate-800 leading-tight py-2 resize-none overflow-hidden" 
                         placeholder="Título del tema..."
-                        onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                            e.target.style.height = 'auto';
-                            e.target.style.height = e.target.scrollHeight + 'px';
-                        }}
+                        onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => resizeTextarea(e.target)}
                     />
                 </div>
 
                 {!isCollapsed && (
                     <div className="select-text min-h-[300px] animate-in fade-in slide-in-from-top-4 duration-500">
-                        {previewModes[t.id] ? (
+                        {(previewModes[t.id] === true || previewModes[t.id] === 'preview') ? (
                             <div className="prose prose-slate max-w-none card-preview"><ReactMarkdown remarkPlugins={defaultRemarkPlugins} rehypePlugins={defaultRehypePlugins}>{t.contenido}</ReactMarkdown></div>
+                        ) : previewModes[t.id] === 'markdown' ? (
+                            <textarea
+                                ref={markdownRef}
+                                value={`## ${t.titulo || ''}\n\n${t.contenido || ''}`}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                                    const raw = e.target.value;
+                                    const match = raw.match(/^\s*#{1,6}[ \t]+([^\n]*)(?:\n{1,2}([\s\S]*))?$/);
+                                    if (match) {
+                                        updateLocalTarjeta(t.id, {
+                                            titulo: match[1],
+                                            contenido: match[2] ?? '',
+                                        });
+                                    } else {
+                                        updateLocalTarjeta(t.id, { contenido: raw });
+                                    }
+                                    resizeTextarea(e.target);
+                                }}
+                                onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => {
+                                    setSelectedCardId(t.id);
+                                    resizeTextarea(e.target);
+                                }}
+                                spellCheck={false}
+                                rows={4}
+                                className="w-full min-h-[200px] p-5 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-medical-green-500 resize-none overflow-hidden"
+                                placeholder="## Título del tema..."
+                            />
                         ) : (
                             <RichCardEditor 
                                 content={t.contenido} 
@@ -223,6 +333,8 @@ const DocumentEditor = () => {
     const [activeEditorState, setActiveEditorState] = useState<any>(null);
     const [saveStatus, setSaveStatus] = useState('idle');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [activeJob, setActiveJob] = useState<{ jobId: string; status: string; label: string } | null>(null);
     const [selectedBulkIds, setSelectedBulkIds] = useState<Set<any>>(new Set());
     const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
     const [collapsedCards, setCollapsedCards] = useState<Set<any>>(new Set());
@@ -253,7 +365,20 @@ const DocumentEditor = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [promptModal, setPromptModal] = useState<any>({ isOpen: false, title: '', defaultValue: '', onConfirm: null, onCancel: null });
     const [docOrderMaps, setDocOrderMaps] = useState<any>(() => { if (typeof window !== 'undefined') { const saved = localStorage.getItem('alquimia_docs_order'); return saved ? JSON.parse(saved) : {}; } return {}; });
+    const [adminRole, setAdminRole] = useState<'admin' | 'demo_teacher'>('admin');
+    const isDemoTeacher = adminRole === 'demo_teacher';
+
+    useEffect(() => {
+        fetch('/api/admin/auth/me', { headers: { 'Cache-Control': 'no-cache' } })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (d?.user?.role === 'demo_teacher') setAdminRole('demo_teacher');
+            })
+            .catch(() => {});
+    }, []);
+
     const handleLogout = async () => {
+        await fetch('/api/admin/auth/logout', { method: 'POST' }).catch(() => {});
         await supabase.auth.signOut();
         window.location.reload();
     };
@@ -351,18 +476,35 @@ const DocumentEditor = () => {
     };
     const toggleFolder = (folder: any) => { setExpandedFolders((prev: any) => { const next = new Set(prev); if (next.has(folder)) next.delete(folder); else next.add(folder); return next; }); };
     
+    const postAdminApi = async (endpoint: '/api/admin/tarjetas' | '/api/admin/documents', payload: Record<string, any>) => {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Error en ${endpoint}`);
+        return data;
+    };
+
     const renameDoc = async (id: any, newName: any) => {
         setDocuments((prev: any[]) => prev.map((d: any) => d.id === id ? { ...d, nombre: newName } : d));
         setSaveStatus('saving');
-        try { await supabase.schema('nutricionista').from('documentos').update({ nombre: newName }).eq('id', id); setSaveStatus('saved'); setTimeout(() => setSaveStatus('idle'), 2000); } catch { setSaveStatus('idle'); }
+        try {
+            await postAdminApi('/api/admin/documents', { action: 'rename_document', id, newName });
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (err) {
+            console.error('Rename doc error:', err);
+            setSaveStatus('error');
+        }
     };
 
     const handleDeleteDoc = async (id: any) => {
         if (!confirm('¿Seguro que deseas eliminar permanentemente esta unidad didáctica y todas sus tarjetas? Esta acción no se puede deshacer.')) return;
         setSaveStatus('saving');
         try {
-            await supabase.schema('nutricionista').from('tarjetas').delete().eq('documento_id', id);
-            await supabase.schema('nutricionista').from('documentos').delete().eq('id', id);
+            await postAdminApi('/api/admin/documents', { action: 'delete_document', id });
             if (selectedDoc?.id === id) { setSelectedDoc(null); setTarjetas([]); }
             await fetchDocuments();
             setSaveStatus('saved');
@@ -377,11 +519,7 @@ const DocumentEditor = () => {
         if (!confirm(`¿Estás TOTALMENTE SEGURO de querer borrar la asignatura completa "${folder}"? Esto borrará todas las unidades y tarjetas que contiene para siempre. Esta acción ES DEFINITIVA.`)) return;
         setSaveStatus('saving');
         try {
-            const docsToDelete = documents.filter((d: any) => d.carpeta === folder);
-            for (const doc of docsToDelete) {
-                await supabase.schema('nutricionista').from('tarjetas').delete().eq('documento_id', doc.id);
-            }
-            await supabase.schema('nutricionista').from('documentos').delete().eq('carpeta', folder);
+            await postAdminApi('/api/admin/documents', { action: 'delete_asignatura', folder });
             
             if (selectedDoc && selectedDoc.carpeta === folder) { setSelectedDoc(null); setTarjetas([]); }
             await fetchDocuments();
@@ -460,11 +598,16 @@ const DocumentEditor = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error al subir el PDF');
 
-            if (data.publicUrl) {
-                window.prompt("¡PDF subido correctamente! Aquí tienes la URL pública que puedes llevar a N8N:", data.publicUrl);
+            await fetchDocuments();
+            if (data.document) {
+                setSelectedDoc(data.document);
+                setSelectedFolder(data.document.carpeta);
+                setNavLevel('temas');
             }
 
-            await fetchDocuments();
+            if (data.s3Key && data.document?.id) {
+                void runAsyncPdfStructureJob(data.s3Key, data.document.id, asignatura.trim(), file.name);
+            }
             setSaveStatus('saved');
         } catch (error: any) {
             console.error('Error subiendo PDF:', error);
@@ -484,17 +627,17 @@ const DocumentEditor = () => {
         if (autosaveTimers.current[id]) clearTimeout(autosaveTimers.current[id]);
         autosaveTimers.current[id] = setTimeout(async () => {
             try {
-                const updateData: any = { updated_at: new Date().toISOString() };
+                const updateData: any = {};
                 if (fields.titulo !== undefined) updateData.titulo = fields.titulo;
                 if (fields.contenido !== undefined) updateData.contenido = fields.contenido;
+                if (fields.needs_review !== undefined) updateData.needs_review = fields.needs_review;
 
-                const { error } = await supabase.schema('nutricionista').from('tarjetas').update(updateData).eq('id', id);
-                if (error) throw error;
+                await postAdminApi('/api/admin/tarjetas', { action: 'update_card', id, fields: updateData });
                 setSaveStatus('saved');
                 setTimeout(() => setSaveStatus('idle'), 2000);
             } catch (err) {
                 console.error('Save error:', err);
-                setSaveStatus('idle');
+                setSaveStatus('error');
             }
         }, 1500);
     };
@@ -503,12 +646,28 @@ const DocumentEditor = () => {
         if (!selectedDoc || tarjetas.length === 0) return;
         setSaveStatus('saving');
         try {
-            const updates = tarjetas.map((t, idx) => ({ id: t.id, documento_id: selectedDoc.id, titulo: t.titulo, contenido: t.contenido, orden: idx, updated_at: new Date().toISOString() }));
-            const { error } = await supabase.schema('nutricionista').from('tarjetas').upsert(updates);
-            if (error) throw error;
+            const updates = tarjetas.map((t, idx) => ({ id: t.id, documento_id: selectedDoc.id, titulo: t.titulo, contenido: t.contenido, orden: idx }));
+            await postAdminApi('/api/admin/tarjetas', { action: 'upsert_cards', documento_id: selectedDoc.id, cards: updates });
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 3000);
-        } catch { setSaveStatus('idle'); }
+        } catch (err) {
+            console.error('Manual save error:', err);
+            setSaveStatus('error');
+        }
+    };
+
+    const persistCardOrder = async (newTs: any[]) => {
+        if (!selectedDoc) return;
+        setSaveStatus('saving');
+        try {
+            const ups = newTs.map((t, i) => ({ id: t.id, orden: i, documento_id: selectedDoc.id, titulo: t.titulo, contenido: t.contenido }));
+            await postAdminApi('/api/admin/tarjetas', { action: 'upsert_cards', documento_id: selectedDoc.id, cards: ups });
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (err) {
+            console.error('Reorder error:', err);
+            setSaveStatus('error');
+        }
     };
 
     const handleAddCard = async () => {
@@ -525,10 +684,13 @@ const DocumentEditor = () => {
         setSelectedCardId(newCard.id);
         setSaveStatus('saving');
         try {
-            await supabase.schema('nutricionista').from('tarjetas').insert(newCard);
+            await postAdminApi('/api/admin/tarjetas', { action: 'add_card', card: newCard });
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
-        } catch { setSaveStatus('idle'); }
+        } catch (err) {
+            console.error('Add card error:', err);
+            setSaveStatus('error');
+        }
     };
 
     const handleDeleteCard = async (id: any) => {
@@ -536,10 +698,13 @@ const DocumentEditor = () => {
         setTarjetas((prev: any[]) => prev.filter((t: any) => t.id !== id));
         setSaveStatus('saving');
         try {
-            await supabase.schema('nutricionista').from('tarjetas').delete().eq('id', id);
+            await postAdminApi('/api/admin/tarjetas', { action: 'delete_card', id });
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
-        } catch { setSaveStatus('idle'); }
+        } catch (err) {
+            console.error('Delete card error:', err);
+            setSaveStatus('error');
+        }
     };
 
     const handlePerfectCardWithIA = async (id: any) => {
@@ -568,6 +733,99 @@ const DocumentEditor = () => {
         }
     };
 
+    const runAsyncPdfStructureJob = async (s3Key: string, documentoId: string, asignatura: string, label: string) => {
+        setIsProcessing(true);
+        setActiveJob({ jobId: '', status: 'pending', label });
+        try {
+            const jobRes = await fetch('/api/jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jobType: 'pdf_structure',
+                    payload: {
+                        s3Key,
+                        asignatura,
+                        documentoId,
+                        mode: process.env.NODE_ENV === 'production' ? 'prod_api' : 'local_gpu',
+                    },
+                }),
+            });
+            const jobData = await jobRes.json();
+            if (!jobRes.ok) throw new Error(jobData.error || 'No se pudo iniciar el procesado');
+
+            const jobId = jobData.jobId as string;
+            setActiveJob({ jobId, status: jobData.status || 'pending', label });
+
+            for (let attempt = 0; attempt < 120; attempt++) {
+                await new Promise((r) => setTimeout(r, 1500));
+                const pollRes = await fetch(`/api/jobs/${jobId}`);
+                if (!pollRes.ok) continue;
+                const pollData = await pollRes.json();
+                const status = pollData?.job?.status || 'processing';
+                setActiveJob({ jobId, status, label });
+
+                if (status === 'completed') {
+                    await fetchTarjetas(documentoId);
+                    await fetchDocuments();
+                    setSaveStatus('saved');
+                    setTimeout(() => setActiveJob(null), 3500);
+                    return;
+                }
+                if (status === 'failed') {
+                    throw new Error(pollData?.job?.error_message || 'El procesado del PDF falló');
+                }
+            }
+            throw new Error('Tiempo de espera agotado consultando el job');
+        } catch (err: any) {
+            console.error('Error job PDF:', err);
+            setActiveJob({ jobId: '', status: 'failed', label: `${label}: ${err.message || err}` });
+            setSaveStatus('error');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleRunDemoSample = async () => {
+        const sampleDoc = documents.find((d: any) => d.carpeta === 'demo-muestra');
+        if (!sampleDoc || !sampleDoc.url) {
+            alert('No se encontró la unidad de muestra (demo-muestra).');
+            return;
+        }
+        setSelectedFolder('demo-muestra');
+        setSelectedDoc(sampleDoc);
+        setNavLevel('temas');
+        const s3Key = sampleDoc.url.replace(/^s3:\/\/[^/]+\//, '');
+        await runAsyncPdfStructureJob(s3Key, sampleDoc.id, 'demo-muestra', sampleDoc.nombre);
+    };
+
+    const handlePublishDocument = async () => {
+        if (!selectedDoc) return;
+        setIsPublishing(true);
+        try {
+            const res = await postAdminApi('/api/admin/documents', {
+                action: 'publish_document',
+                id: selectedDoc.id,
+            });
+            setSelectedDoc((prev: any) => (prev ? { ...prev, estado: 'publicado' } : prev));
+            setDocuments((prev: any[]) =>
+                prev.map((d: any) => (d.id === selectedDoc.id ? { ...d, estado: 'publicado' } : d))
+            );
+            setTarjetas((prev: any[]) => prev.map((t: any) => ({ ...t, needs_review: false })));
+            setSaveStatus('saved');
+            alert(
+                res.qdrantIndexed
+                    ? `¡Unidad publicada para alumnos e indexada en Qdrant (${res.indexedCount} tarjetas)!`
+                    : '¡Unidad publicada para alumnos! (Qdrant local no disponible en este momento).'
+            );
+        } catch (err: any) {
+            console.error('Error publicando:', err);
+            alert('Error al publicar la unidad: ' + (err.message || err));
+            setSaveStatus('error');
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
     const handleAutoStructure = async () => {
         if (!selectedDoc) return;
         if (tarjetas.length > 0 && !confirm('Atención: La IA re-estructurará todo el documento y reemplazará las tarjetas actuales. ¿Deseas continuar?')) return;
@@ -575,7 +833,11 @@ const DocumentEditor = () => {
         setIsProcessing(true);
         setToolsMenuOpen(false);
         try {
-            const hasPdf = selectedDoc.url && selectedDoc.url.toLowerCase().includes('.pdf');
+            if (selectedDoc.url && selectedDoc.url.startsWith('s3://')) {
+                const s3Key = selectedDoc.url.replace(/^s3:\/\/[^/]+\//, '');
+                await runAsyncPdfStructureJob(s3Key, selectedDoc.id, selectedDoc.carpeta || 'general', selectedDoc.nombre);
+                return;
+            }
             
             // 1. Llamar al endpoint seguro del servidor que procesa con pdf-parse y sincroniza con Supabase
             const res = await fetch('/api/admin/documents', {
@@ -605,38 +867,6 @@ const DocumentEditor = () => {
         }
     };
 
-    const handleUpdateIndex = async () => {
-        if (!tarjetas.length || !selectedDoc) return;
-        setSaveStatus('saving');
-        try {
-            const temas = tarjetas.filter((t: any) => !isIndexTitle(t.titulo)).map((t: any) => t.titulo);
-            const indexContent = temas.map((titulo: string, i: number) => `${i + 1}. ${titulo}`).join('\n');
-            
-            let indexCard = tarjetas.find((t: any) => isIndexTitle(t.titulo));
-            
-            if (indexCard) {
-                const { error } = await supabase.schema('nutricionista').from('tarjetas').update({ contenido: indexContent }).eq('id', indexCard.id);
-                if (error) throw error;
-                setTarjetas((prev: any[]) => prev.map((t: any) => t.id === indexCard.id ? { ...t, contenido: indexContent } : t));
-            } else {
-                const newIndex = {
-                    documento_id: selectedDoc.id,
-                    titulo: 'Índice',
-                    contenido: indexContent,
-                    orden: -1
-                };
-                const { error } = await supabase.schema('nutricionista').from('tarjetas').insert(newIndex).select();
-                if (error) throw error;
-                await fetchTarjetas(selectedDoc.id);
-            }
-            setSaveStatus('saved');
-            setTimeout(() => setSaveStatus('idle'), 2000);
-        } catch (err) {
-            console.error('Error index:', err);
-            setSaveStatus('idle');
-        }
-    };
-
     const toggleCardSelection = (id: any) => {
         setSelectedBulkIds((prev: any) => {
             const next = new Set(prev);
@@ -658,8 +888,7 @@ const DocumentEditor = () => {
         setSaveStatus('saving');
         try {
             const idsToDelete = Array.from(selectedBulkIds);
-            const { error } = await supabase.schema('nutricionista').from('tarjetas').delete().in('id', idsToDelete);
-            if (error) throw error;
+            await postAdminApi('/api/admin/tarjetas', { action: 'bulk_delete', ids: idsToDelete });
             
             setTarjetas((prev: any[]) => prev.filter((t: any) => !selectedBulkIds.has(t.id)));
             setSelectedBulkIds(new Set());
@@ -667,7 +896,31 @@ const DocumentEditor = () => {
             setTimeout(() => setSaveStatus('idle'), 2000);
         } catch (err) {
             console.error('Error bulk delete:', err);
-            setSaveStatus('idle');
+            setSaveStatus('error');
+        }
+    };
+
+    const handleVerifyBulk = async () => {
+        const targetIds = selectedBulkIds.size > 0
+            ? Array.from(selectedBulkIds)
+            : tarjetas.filter((t: any) => t.needs_review).map((t: any) => t.id);
+        if (targetIds.length === 0) return;
+
+        setSaveStatus('saving');
+        try {
+            await postAdminApi('/api/admin/tarjetas', {
+                action: 'bulk_verify',
+                ids: targetIds,
+                needs_review: false,
+            });
+            const idSet = new Set(targetIds);
+            setTarjetas((prev: any[]) => prev.map((t: any) => idSet.has(t.id) ? { ...t, needs_review: false } : t));
+            setSelectedBulkIds(new Set());
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (err) {
+            console.error('Error bulk verify:', err);
+            setSaveStatus('error');
         }
     };
 
@@ -785,6 +1038,16 @@ const DocumentEditor = () => {
                         )}
                     </div>
 
+                    {isDemoTeacher && (
+                        <button
+                            onClick={handleRunDemoSample}
+                            disabled={isProcessing}
+                            className="bg-amber-500 text-white px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 shadow-md active:scale-95 transition-all disabled:opacity-50 shrink-0"
+                            title="Ejecutar el pipeline de chunking sobre el PDF de muestra en S3"
+                        >
+                            {isProcessing ? 'Procesando Demo...' : 'Probar PDF Muestra (S3)'}
+                        </button>
+                    )}
                     <a 
                         href="/admin/calendario" 
                         className="bg-slate-900 text-white px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-md active:scale-95 transition-all flex items-center gap-2 border border-slate-700 shrink-0"
@@ -812,31 +1075,54 @@ const DocumentEditor = () => {
                 </div>
             </header>
 
+            {/* BANNER MODO DEMO PROFESOR */}
+            {isDemoTeacher && (
+                <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 flex items-center justify-between text-xs text-amber-900">
+                    <div className="flex items-center gap-2 font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-amber-200/80 text-[10px] font-black uppercase tracking-wider">Modo Demo Profesor</span>
+                        <span>Lectura en el temario real. No se permite subir PDFs externos ni borrar unidades; usa <strong>Probar PDF Muestra (S3)</strong> para ver el chunking en vivo.</span>
+                    </div>
+                </div>
+            )}
+
             {/* NAVEGADOR HORIZONTAL DEDICADO PARA FORMATO DE TEXTO */}
             <div className="h-13 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur-md flex items-center px-6 justify-center shrink-0 z-[105] shadow-xs">
                 <div className="flex items-center gap-1 bg-white/90 p-1 rounded-2xl border border-slate-200/80 shadow-sm overflow-x-auto custom-scrollbar max-w-full">
                      <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBold().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('bold') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-bold'}`} title="Negrita (B)">B</button>
                      <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleItalic().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('italic') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 italic font-serif text-base'}`} title="Cursiva (I)">I</button>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleHeading({ level: 3 }).run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('heading', { level: 3 }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-black text-[11px]'}`} title="Encabezado H3">H3</button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleUnderline().run(); }} className={`w-8 h-8 rounded-xl transition-all underline underline-offset-2 ${activeEditorState?.isActive('underline') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-semibold'}`} title="Subrayado (Ctrl+U)">U</button>
+                     {([2, 3, 4, 5, 6] as const).map((level) => (
+                         <button
+                             key={level}
+                             onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleHeading({ level }).run(); }}
+                             className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('heading', { level }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-black text-[11px]'}`}
+                             title={`Encabezado H${level}`}
+                         >
+                             H{level}
+                         </button>
+                     ))}
                      <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleHighlight().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('highlight') ? 'bg-yellow-400 text-slate-900 shadow-md font-bold' : 'hover:bg-slate-100 text-slate-600'}`} title="Resaltado amarillo">✨</button>
                      
                      <div className="w-px h-4 bg-slate-200 mx-1"></div>
                      
-                     <button onClick={handleUpdateIndex} className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-100 hover:text-medical-green-600 transition-all border border-transparent" title="Actualizar Índice">
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                        Índice
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBulletList().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('bulletList') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Lista de Viñetas">
+                        <svg className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                            <circle cx="4.5" cy="6" r="1.5" fill="currentColor" stroke="none" />
+                            <circle cx="4.5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                            <circle cx="4.5" cy="18" r="1.5" fill="currentColor" stroke="none" />
+                            <path strokeLinecap="round" d="M9 6h11M9 12h11M9 18h11" />
+                        </svg>
                      </button>
-                     
-                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                     
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBulletList().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('bulletList') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Lista de Viñetas"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
-                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleOrderedList().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('orderedList') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Lista Numerada"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M7 6h13M7 12h13M7 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg></button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleOrderedList().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('orderedList') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Lista Numerada">
+                        <ListOrdered className="h-4 w-4 mx-auto" strokeWidth={2.25} />
+                     </button>
                      <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().toggleBlockquote().run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive('blockquote') ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600 font-serif text-lg font-bold'}`} title="Cita en Bloque">”</button>
                      
                      <div className="w-px h-4 bg-slate-200 mx-1"></div>
                      
                      <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().setTextAlign('left').run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive({ textAlign: 'left' }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Alinear a la Izquierda"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M4 12h10M4 18h16" /></svg></button>
                      <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().setTextAlign('center').run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive({ textAlign: 'center' }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Alinear al Centro"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M7 12h10M4 18h16" /></svg></button>
+                     <button onMouseDown={e => { e.preventDefault(); activeEditorRef.current?.chain().focus().setTextAlign('justify').run(); }} className={`w-8 h-8 rounded-xl transition-all ${activeEditorState?.isActive({ textAlign: 'justify' }) ? 'bg-slate-900 text-white shadow-md' : 'hover:bg-slate-100 text-slate-600'}`} title="Texto Justificado"><svg className="h-3.5 w-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg></button>
                      
                      <div className="w-px h-4 bg-slate-200 mx-1"></div>
                      
@@ -888,29 +1174,31 @@ const DocumentEditor = () => {
                             <p className="text-[10px] font-black text-medical-green-600 uppercase tracking-widest mt-1">Admin Panel</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {/* BOTÓN CREAR CARPETA */}
-                        <button
-                            onClick={handleCreateAsignatura}
-                            className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all shadow-sm shrink-0"
-                            title="Crear nueva asignatura"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-                        </button>
-                        {/* BOTÓN SUBIR PDF MUNDIAL */}
-                        <button
-                            onClick={() => triggerUpload(null)}
-                            disabled={isUploading}
-                            className="w-10 h-10 rounded-xl bg-medical-green-50 flex items-center justify-center text-medical-green-600 border border-medical-green-100 hover:bg-medical-green-500 hover:text-white transition-all shadow-sm shrink-0"
-                            title="Subir nuevo PDF"
-                        >
-                            {isUploading ? (
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                            )}
-                        </button>
-                    </div>
+                    {!isDemoTeacher && (
+                        <div className="flex items-center gap-2">
+                            {/* BOTÓN CREAR CARPETA */}
+                            <button
+                                onClick={handleCreateAsignatura}
+                                className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-slate-900 hover:text-white transition-all shadow-sm shrink-0"
+                                title="Crear nueva asignatura"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+                            </button>
+                            {/* BOTÓN SUBIR PDF MUNDIAL */}
+                            <button
+                                onClick={() => triggerUpload(null)}
+                                disabled={isUploading}
+                                className="w-10 h-10 rounded-xl bg-medical-green-50 flex items-center justify-center text-medical-green-600 border border-medical-green-100 hover:bg-medical-green-500 hover:text-white transition-all shadow-sm shrink-0"
+                                title="Subir nuevo PDF"
+                            >
+                                {isUploading ? (
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                )}
+                            </button>
+                        </div>
+                    )}
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf" className="hidden" />
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
@@ -934,23 +1222,25 @@ const DocumentEditor = () => {
                                             <span className="text-[9px] font-bold text-slate-400 mt-0.5">{docs.length} Unidades</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); triggerUpload(folder); }} 
-                                            className="p-1.5 rounded-lg text-slate-400 hover:text-medical-green-600 hover:bg-medical-green-50 transition-all opacity-0 group-hover/folder:opacity-100"
-                                            title="Subir PDF a esta asignatura"
-                                        >
-                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 4v16m8-8H4" /></svg>
-                                        </button>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteAsignatura(folder); }} 
-                                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/folder:opacity-100"
-                                            title="Eliminar asignatura"
-                                        >
-                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
-                                        <svg className="h-4 w-4 text-slate-300 group-hover/folder:text-medical-green-500 transition-colors ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M9 5l7 7-7 7" /></svg>
-                                    </div>
+                                    {!isDemoTeacher && (
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); triggerUpload(folder); }} 
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-medical-green-600 hover:bg-medical-green-50 transition-all opacity-0 group-hover/folder:opacity-100"
+                                                title="Subir PDF a esta asignatura"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 4v16m8-8H4" /></svg>
+                                            </button>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteAsignatura(folder); }} 
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/folder:opacity-100"
+                                                title="Eliminar asignatura"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                            <svg className="h-4 w-4 text-slate-300 group-hover/folder:text-medical-green-500 transition-colors ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M9 5l7 7-7 7" /></svg>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -1000,10 +1290,19 @@ const DocumentEditor = () => {
                                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M15 19l-7-7 7-7" /></svg>
                                     Unidades
                                 </button>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 flex-wrap justify-end">
                                     <button onClick={toggleSelectAll} className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-slate-100 text-slate-600 hover:bg-slate-200">
                                         {selectedBulkIds.size === tarjetas.length ? 'Ninguno' : 'Todos'}
                                     </button>
+                                    {(selectedBulkIds.size > 0 || tarjetas.some((t: any) => t.needs_review)) && (
+                                        <button
+                                            onClick={handleVerifyBulk}
+                                            className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-all"
+                                            title={selectedBulkIds.size > 0 ? 'Verificar tarjetas seleccionadas' : 'Verificar todas las tarjetas pendientes'}
+                                        >
+                                            {selectedBulkIds.size > 0 ? `Verificar (${selectedBulkIds.size})` : 'Verificar todo'}
+                                        </button>
+                                    )}
                                     {selectedBulkIds.size > 0 && (
                                         <button onClick={handleDeleteBulk} className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-red-50 text-red-600 hover:bg-red-600 hover:text-white">
                                             Borrar ({selectedBulkIds.size})
@@ -1022,12 +1321,7 @@ const DocumentEditor = () => {
                                 const { active, over } = event; if (!over || active.id === over.id) return;
                                 const oldIdx = tarjetas.findIndex(t => t.id === active.id); const newIdx = tarjetas.findIndex(t => t.id === over.id);
                                 const newTs = arrayMove(tarjetas, oldIdx, newIdx); setTarjetas(newTs);
-                                setSaveStatus('saving');
-                                try {
-                                    const ups = newTs.map((t, i) => ({ id: t.id, orden: i, documento_id: selectedDoc.id, titulo: t.titulo, contenido: t.contenido, updated_at: new Date().toISOString() }));
-                                    await supabase.schema('nutricionista').from('tarjetas').upsert(ups); setSaveStatus('saved');
-                                    setTimeout(() => setSaveStatus('idle'), 2000);
-                                } catch { setSaveStatus('idle'); }
+                                await persistCardOrder(newTs);
                             }}>
                                 <SortableContext items={tarjetas.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                     <div className="space-y-2 max-h-[calc(100vh-240px)] overflow-y-auto custom-scrollbar pr-1">
@@ -1037,6 +1331,7 @@ const DocumentEditor = () => {
                                                 id={t.id} 
                                                 index={i} 
                                                 titulo={t.titulo} 
+                                                needsReview={Boolean(t.needs_review)}
                                                 isActive={selectedCardId === t.id} 
                                                 isSelected={selectedBulkIds.has(t.id)}
                                                 onToggleSelect={toggleCardSelection}
@@ -1088,6 +1383,42 @@ const DocumentEditor = () => {
                                     <button onClick={() => setNavLevel('temas')} className="font-black text-slate-800 uppercase tracking-tight hover:text-medical-green-600 transition-colors truncate">
                                         {selectedDoc.nombre}
                                     </button>
+                                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider shrink-0 border ${
+                                        selectedDoc.estado === 'borrador'
+                                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    }`}>
+                                        {selectedDoc.estado === 'borrador' ? 'Borrador' : 'Publicado'}
+                                    </span>
+                                    {selectedDoc.estado === 'borrador' && (() => {
+                                        const pendingCount = tarjetas.filter((t: any) => t.needs_review).length;
+                                        const verifiedCount = tarjetas.length - pendingCount;
+                                        const canPublish = tarjetas.length > 0 && pendingCount === 0 && !isPublishing;
+                                        return (
+                                            <>
+                                                <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-[9px] font-bold uppercase tracking-wider shrink-0">
+                                                    {verifiedCount}/{tarjetas.length} verificadas
+                                                </span>
+                                                {pendingCount > 0 && (
+                                                    <button
+                                                        onClick={handleVerifyBulk}
+                                                        className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white text-[10px] font-black uppercase tracking-wider transition-all shrink-0"
+                                                        title={selectedBulkIds.size > 0 ? `Verificar las ${selectedBulkIds.size} tarjetas seleccionadas` : 'Marcar todas las tarjetas como verificadas'}
+                                                    >
+                                                        {selectedBulkIds.size > 0 ? `Verificar (${selectedBulkIds.size})` : 'Verificar todo'}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={handlePublishDocument}
+                                                    disabled={!canPublish}
+                                                    className="px-3 py-1 rounded-xl bg-medical-green-600 hover:bg-medical-green-700 text-white text-[10px] font-black uppercase tracking-wider shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                                    title={canPublish ? 'Hacer visible para alumnos e indexar en Qdrant' : 'Verifica todas las tarjetas antes de publicar'}
+                                                >
+                                                    {isPublishing ? 'Publicando...' : 'Publicar'}
+                                                </button>
+                                            </>
+                                        );
+                                    })()}
                                 </>
                             )}
                             {selectedCardId && (
@@ -1149,6 +1480,39 @@ const DocumentEditor = () => {
                     )}
                 </div>
 
+                {/* BARRA DE PROGRESO DE PROCESADO PDF (ETAPA B3) */}
+                {activeJob && (
+                    <div className={`px-6 py-2.5 border-b flex items-center justify-between text-xs font-bold ${
+                        activeJob.status === 'failed'
+                            ? 'bg-red-50 border-red-200 text-red-700'
+                            : activeJob.status === 'completed'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                : 'bg-amber-50 border-amber-200 text-amber-900'
+                    }`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                activeJob.status === 'failed'
+                                    ? 'bg-red-500'
+                                    : activeJob.status === 'completed'
+                                        ? 'bg-emerald-500'
+                                        : 'bg-amber-500 animate-pulse'
+                            }`} />
+                            <span className="truncate">
+                                {activeJob.status === 'pending' && `Encolando PDF (${activeJob.label})...`}
+                                {activeJob.status === 'processing' && `Estructurando ${activeJob.label} con IA (4 capas + verificación numérica)...`}
+                                {activeJob.status === 'completed' && `¡${activeJob.label} estructurado en borrador y listo para revisión!`}
+                                {activeJob.status === 'failed' && `Error procesando ${activeJob.label}`}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setActiveJob(null)}
+                            className="text-[10px] uppercase tracking-wider opacity-70 hover:opacity-100 ml-4 shrink-0"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                )}
+
                 {/* CONTENEDOR PRINCIPAL DEL EDITOR (BARRA LATERAL IZQ + SCROLL CENTRAL) */}
                 <div className="flex-1 relative flex flex-col overflow-hidden">
                     {/* BOTONES FLOTANTES (POST-IT) - FIJOS AL DIVISOR DERECHO (JUNTO AL PDF) */}
@@ -1201,12 +1565,7 @@ const DocumentEditor = () => {
                                     const { active, over } = event; if (!over || active.id === over.id) return;
                                     const oldIdx = tarjetas.findIndex(t => t.id === active.id); const newIdx = tarjetas.findIndex(t => t.id === over.id);
                                     const newTs = arrayMove(tarjetas, oldIdx, newIdx); setTarjetas(newTs);
-                                    setSaveStatus('saving');
-                                    try {
-                                        const ups = newTs.map((t, i) => ({ id: t.id, orden: i, documento_id: selectedDoc.id, titulo: t.titulo, contenido: t.contenido, updated_at: new Date().toISOString() }));
-                                        await supabase.schema('nutricionista').from('tarjetas').upsert(ups); setSaveStatus('saved');
-                                        setTimeout(() => setSaveStatus('idle'), 2000);
-                                    } catch { setSaveStatus('idle'); }
+                                    await persistCardOrder(newTs);
                                 }}>
                                     <SortableContext items={tarjetas.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                         {tarjetas.map((t, i) => (

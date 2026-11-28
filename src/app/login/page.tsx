@@ -9,41 +9,33 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
 
   const supabase = createClient();
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const signInWithEmail = async (targetEmail: string, targetPassword: string) => {
     setLoading(true);
     setErrorMsg(null);
-
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
-        });
-        if (error) throw error;
-        alert('¡Registro completado! Revisa tu email para confirmar la cuenta.');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        router.push('/dashboard');
-        router.refresh();
-      }
+      // Asegurar que cualquier sesión previa de profesor/admin quede cerrada al entrar como alumno
+      await fetch('/api/admin/auth/logout', { method: 'POST' }).catch(() => {});
+      const { error } = await supabase.auth.signInWithPassword({
+        email: targetEmail,
+        password: targetPassword,
+      });
+      if (error) throw error;
+      router.push('/dashboard');
+      router.refresh();
     } catch (err: any) {
       setErrorMsg(err.message || 'Error en la autenticación');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await signInWithEmail(email, password);
   };
 
   return (
@@ -57,7 +49,7 @@ export default function LoginPage() {
             Acceso a Alquimia LMS
           </h1>
           <p className="text-xs text-slate-400">
-            {isSignUp ? 'Crea tu cuenta de estudiante FP' : 'Inicia sesión con Supabase Auth SSR'}
+            Inicia sesión con tu cuenta o entra en Modo Demo
           </p>
         </div>
 
@@ -101,21 +93,36 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-3.5 bg-medical-green-500 hover:bg-medical-green-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-medical-green-500/20 transition-all disabled:opacity-50"
           >
-            {loading ? 'Procesando...' : isSignUp ? 'Registrarme' : 'Iniciar Sesión'}
+            {loading ? 'Procesando...' : 'Iniciar Sesión'}
           </button>
         </form>
 
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-          <span className="text-slate-400">
-            {isSignUp ? '¿Ya tienes cuenta?' : '¿Nuevo estudiante?'}
-          </span>
+        <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800">
+              Modo Demo — Alumno
+            </span>
+            <span className="text-[10px] font-semibold text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200">
+              Lectura y Evaluaciones
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            Usuario: <code className="font-mono font-semibold text-slate-800">demo.alumno@alquimia.es</code><br />
+            Clave: <code className="font-mono font-semibold text-slate-800">DemoAlumno2026!</code>
+          </p>
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="font-bold text-medical-green-600 hover:underline"
+            type="button"
+            disabled={loading}
+            onClick={() => signInWithEmail('demo.alumno@alquimia.es', 'DemoAlumno2026!')}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50"
           >
-            {isSignUp ? 'Iniciar Sesión' : 'Crear Cuenta'}
+            Entrar como Alumno Demo
           </button>
         </div>
+
+        <p className="text-[11px] text-center text-slate-400 pt-2 border-t border-slate-100">
+          El registro de nuevas cuentas está deshabilitado temporalmente.
+        </p>
       </div>
     </div>
   );

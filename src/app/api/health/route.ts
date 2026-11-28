@@ -40,7 +40,7 @@ async function checkSupabase(): Promise<DependencyCheck> {
   if (!url || !key || url.includes("tu-proyecto")) {
     return { status: "not_configured" };
   }
-  return probeHttp(`${url.replace(/\/+$/, "")}/rest/v1/`, { apikey: key });
+  return probeHttp(`${url.replace(/\/+$/, "")}/auth/v1/health`, { apikey: key });
 }
 
 async function checkRedis(): Promise<DependencyCheck> {

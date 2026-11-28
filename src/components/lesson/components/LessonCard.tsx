@@ -44,7 +44,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
     hasPdf = false,
 }) => {
     const isIndexCard = block.titulo.toLowerCase().includes("indice") || block.titulo.toLowerCase().includes("índice");
-    const normalizedContent = normalizeCardContent(block.contenido);
+    const normalizedContent = block.documento_id ? (block.contenido || "") : normalizeCardContent(block.contenido);
 
     return (
         <section
@@ -155,6 +155,40 @@ export const LessonCard: React.FC<LessonCardProps> = ({
                     remarkPlugins={defaultRemarkPlugins}
                     rehypePlugins={defaultRehypePlugins}
                     components={{
+                        ol({ node: _node, children, ...props }: any) {
+                            return (
+                                <ol
+                                    className="list-decimal pl-6 my-3 space-y-1.5 text-left"
+                                    style={{ listStyleType: "decimal", paddingLeft: "1.5rem" }}
+                                    {...props}
+                                >
+                                    {children}
+                                </ol>
+                            );
+                        },
+                        ul({ node: _node, children, ...props }: any) {
+                            return (
+                                <ul
+                                    className="list-disc pl-6 my-3 space-y-1.5 text-left"
+                                    style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
+                                    {...props}
+                                >
+                                    {children}
+                                </ul>
+                            );
+                        },
+                        li({ node: _node, children, ...props }: any) {
+                            return <li className="leading-relaxed" style={{ display: "list-item" }} {...props}>{children}</li>;
+                        },
+                        h2({ children, ...props }: any) {
+                            return <h2 className="text-lg font-bold text-slate-900 mt-5 mb-2 text-left" {...props}>{children}</h2>;
+                        },
+                        h3({ children, ...props }: any) {
+                            return <h3 className="text-base font-bold text-slate-900 mt-4 mb-2 text-left" {...props}>{children}</h3>;
+                        },
+                        h4({ children, ...props }: any) {
+                            return <h4 className="text-sm font-bold text-slate-800 mt-3 mb-1.5 text-left" {...props}>{children}</h4>;
+                        },
                         code({ node, inline, className, children, ...props }: any) {
                             const match = /language-(\w+)/.exec(className || "");
                             const codeString = String(children).replace(/\n$/, "");

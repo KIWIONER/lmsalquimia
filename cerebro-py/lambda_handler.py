@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional
 
 from schemas.async_job import AsyncJobMessage
 from schemas.quiz import QuizGenerationRequest
+from services.health_pdf_pipeline import process_pdf_with_4_layers
 from services.job_repository import JobRepository, SupabaseJobRepository
-from services.pdf_service import extract_cards_from_pdf_bytes
 from services.quiz_service import generate_adaptive_quiz
 
 logger = logging.getLogger("alquimia_lambda_worker")
@@ -31,7 +31,9 @@ def _process_pdf_job(
 
     obj = s3_client.get_object(Bucket=bucket, Key=s3_key)
     pdf_bytes = obj["Body"].read()
-    cards = extract_cards_from_pdf_bytes(pdf_bytes)
+    pipeline_outcome = asyncio.run(process_pdf_with_4_layers(pdf_bytes, mode="prod_api"))
+    cards = pipeline_outcome.get("cards", [])
+    report = pipeline_outcome.get("report", {})
 
     result_key = f"generated/reports/{msg.user_id}/{msg.job_id}.json"
     result_body = json.dumps(
@@ -39,6 +41,7 @@ def _process_pdf_job(
             "job_id": msg.job_id,
             "total_cards": len(cards),
             "cards": cards,
+            "verification_report": report,
         },
         ensure_ascii=False,
     ).encode("utf-8")
@@ -52,7 +55,11 @@ def _process_pdf_job(
 
     return {
         "result_url": result_key,
-        "result_payload": {"total_cards": len(cards), "s3_result_key": result_key},
+        "result_payload": {
+            "total_cards": len(cards),
+            "s3_result_key": result_key,
+            "verification_report": report,
+        },
     }
 
 

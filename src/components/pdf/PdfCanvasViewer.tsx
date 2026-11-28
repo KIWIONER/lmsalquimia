@@ -250,6 +250,18 @@ const PdfPageItem = memo(({
 });
 PdfPageItem.displayName = "PdfPageItem";
 
+export function resolvePdfViewerUrl(rawUrl: string): string {
+    if (!rawUrl) return "";
+    if (rawUrl.startsWith("s3://")) {
+        const withoutScheme = rawUrl.slice(5);
+        const slashIdx = withoutScheme.indexOf("/");
+        if (slashIdx === -1) return rawUrl;
+        const key = withoutScheme.slice(slashIdx + 1);
+        return `/api/storage/view?key=${encodeURIComponent(key)}`;
+    }
+    return rawUrl;
+}
+
 export const PdfCanvasViewer: React.FC<PdfCanvasViewerProps> = ({
     pdfUrl,
     cardTitle,
@@ -260,6 +272,7 @@ export const PdfCanvasViewer: React.FC<PdfCanvasViewerProps> = ({
     onTextFound,
     className = ""
 }) => {
+    const resolvedPdfUrl = resolvePdfViewerUrl(pdfUrl);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const pagesContainerRef = useRef<HTMLDivElement | null>(null);
     const [pdfDoc, setPdfDoc] = useState<any>(null);
@@ -284,7 +297,7 @@ export const PdfCanvasViewer: React.FC<PdfCanvasViewerProps> = ({
         async function loadPdf() {
             try {
                 const loadingTask = pdfjsLib.getDocument({
-                    url: pdfUrl,
+                    url: resolvedPdfUrl,
                     cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/cmaps/",
                     cMapPacked: true,
                     standardFontDataUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/standard_fonts/"
@@ -884,7 +897,7 @@ export const PdfCanvasViewer: React.FC<PdfCanvasViewerProps> = ({
                         <h4 className="text-sm font-bold text-rose-200">Error al visualizar PDF</h4>
                         <p className="text-xs text-rose-300/80">{error}</p>
                         <a
-                            href={pdfUrl}
+                            href={resolvedPdfUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-md"

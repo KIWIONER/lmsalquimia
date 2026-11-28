@@ -1,7 +1,16 @@
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-FeatureType = Literal["tutor_chat", "quiz_gen", "itinerary"]
+FeatureType = Literal["tutor_chat", "quiz_gen", "itinerary", "card_structure"]
+
+
+class StructuredCardOutput(BaseModel):
+    """Contrato estricto para tarjeta pedagógica estructurada/traducida por LLM."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    titulo: str = Field(..., min_length=2, max_length=120)
+    contenido_markdown: str = Field(..., min_length=10)
 
 
 class LLMRouterRequest(BaseModel):

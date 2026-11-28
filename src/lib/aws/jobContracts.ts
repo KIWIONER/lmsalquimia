@@ -60,6 +60,8 @@ export const PdfStructurePayloadSchema = z
       .refine((k) => !k.includes(".."), "Path traversal no permitido")
       .refine((k) => k.toLowerCase().endsWith(".pdf"), "s3Key debe apuntar a un .pdf"),
     asignatura: z.string().min(1).max(120).optional(),
+    documentoId: z.string().uuid().optional(),
+    mode: z.enum(["local_gpu", "prod_api"]).optional(),
   })
   .strict();
 

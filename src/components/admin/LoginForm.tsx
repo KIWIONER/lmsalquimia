@@ -68,7 +68,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm outline-none focus:border-medical-green-500 focus:bg-white transition-all shadow-inner font-medium text-slate-800"
-                            placeholder="director@agencialquimia.com"
+                            placeholder="admin@ejemplo.com"
                         />
                     </div>
                     <div>
@@ -112,8 +112,50 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                     </button>
                 </form>
                 
-                <div className="px-10 pb-16 text-center">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                <div className="px-10 pb-10 space-y-5">
+                    <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2.5 text-left">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-900">
+                                Modo Demo — Profesor
+                            </span>
+                            <span className="text-[9px] font-bold text-amber-800 bg-white px-2 py-0.5 rounded border border-amber-200">
+                                PDF Muestra S3
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                            Email: <code className="font-mono font-semibold text-slate-800">profesor.demo@alquimia.es</code><br />
+                            Clave: <code className="font-mono font-semibold text-slate-800">DemoProfesor2026!</code>
+                        </p>
+                        <button
+                            type="button"
+                            disabled={loading}
+                            onClick={async () => {
+                                setLoading(true);
+                                setError(null);
+                                try {
+                                    const res = await fetch('/api/admin/auth/login', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            email: 'profesor.demo@alquimia.es',
+                                            password: 'DemoProfesor2026!',
+                                        }),
+                                    });
+                                    const data = await res.json();
+                                    if (!res.ok) throw new Error(data.error || 'Error en acceso demo');
+                                    if (onLogin) onLogin(data.user);
+                                } catch (err: any) {
+                                    setError(err.message || 'Error al autenticar en modo demo');
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
+                            className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                        >
+                            Entrar como Profesor Demo
+                        </button>
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed text-center">
                         Acceso protegido por API Gateway de Alquimia.<br/>
                         Las credenciales no dependen de servicios de terceros.
                     </p>

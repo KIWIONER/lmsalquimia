@@ -32,7 +32,7 @@ const RichCardEditor: React.FC<RichCardEditorProps> = ({
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
-            StarterKit.configure({ heading: { levels: [3] } }),
+            StarterKit.configure({ heading: { levels: [2, 3, 4, 5, 6] } }),
             Highlight.configure({ multicolor: false }),
             Table.configure({ resizable: true }),
             TableRow,

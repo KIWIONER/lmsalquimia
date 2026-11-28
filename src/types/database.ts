@@ -16,6 +16,8 @@ export interface Database {
           carpeta: string
           url: string | null
           orden: number | null
+          estado: 'borrador' | 'publicado'
+          verification_report: Json | null
           created_at: string
         }
         Insert: {
@@ -24,6 +26,8 @@ export interface Database {
           carpeta: string
           url?: string | null
           orden?: number | null
+          estado?: 'borrador' | 'publicado'
+          verification_report?: Json | null
           created_at?: string
         }
         Update: {
@@ -32,6 +36,8 @@ export interface Database {
           carpeta?: string
           url?: string | null
           orden?: number | null
+          estado?: 'borrador' | 'publicado'
+          verification_report?: Json | null
           created_at?: string
         }
       }
@@ -42,6 +48,7 @@ export interface Database {
           titulo: string
           contenido: string
           orden: number
+          needs_review: boolean
           created_at: string
         }
         Insert: {
@@ -50,6 +57,7 @@ export interface Database {
           titulo: string
           contenido: string
           orden?: number
+          needs_review?: boolean
           created_at?: string
         }
         Update: {
@@ -58,6 +66,7 @@ export interface Database {
           titulo?: string
           contenido?: string
           orden?: number
+          needs_review?: boolean
           created_at?: string
         }
       }

@@ -13,20 +13,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const isValid = validateAdminCredentials(email, password);
+    const role = validateAdminCredentials(email, password);
 
-    if (!isValid) {
+    if (!role) {
       return NextResponse.json(
         { error: 'Credenciales administrativas incorrectas' },
         { status: 401 }
       );
     }
 
-    const token = await signAdminToken(email);
+    const token = await signAdminToken(email, role);
 
     const response = NextResponse.json({
       success: true,
-      user: { email, role: 'admin' }
+      user: { email, role }
     });
 
     response.cookies.set({
