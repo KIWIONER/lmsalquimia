@@ -71,7 +71,7 @@ export function validateAdminCredentials(emailInput: string, passwordInput: stri
     return 'admin';
   }
 
-  if (process.env.DISABLE_DEMO_MODE !== 'true') {
+  if (process.env.ENABLE_DEMO_MODE === 'true') {
     const demoEmail = (process.env.DEMO_TEACHER_EMAIL || 'profesor.demo@alquimia.es').trim().toLowerCase();
     const demoPassword = process.env.DEMO_TEACHER_PASSWORD || 'DemoProfesor2026!';
     if (safeCompare(cleanEmail, demoEmail) && safeCompare(cleanPassword, demoPassword)) {

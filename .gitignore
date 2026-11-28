@@ -47,3 +47,12 @@ infra/.terraform/
 *.tfstate.*
 *.tfvars
 debug.log
+
+# Local AI tooling / Agent workspace files (keep local, exclude from repo)
+.agents/
+.ai-rules/
+skills/
+skills-lock.json
+AGENTS.md
+ai_prompt.md
+memory/
