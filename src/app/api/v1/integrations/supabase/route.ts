@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const webhookSecret = process.env.SUPABASE_WEBHOOK_SECRET || "alquimia-supabase-webhook-secret-2026";
+    const webhookSecret = process.env.SUPABASE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return NextResponse.json(
+        { error: "SUPABASE_WEBHOOK_SECRET no configurado en el servidor." },
+        { status: 500 }
+      );
+    }
     const authHeader = request.headers.get("x-supabase-webhook-secret") || request.headers.get("authorization")?.replace("Bearer ", "");
 
     if (authHeader !== webhookSecret) {

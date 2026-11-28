@@ -36,6 +36,12 @@ async function resolveJobUserId(
   return data.users[0].id;
 }
 
+interface StructuredCardPayload {
+  titulo?: string;
+  contenido?: string;
+  orden?: number;
+}
+
 async function runLocalPdfJob(params: {
   serviceDb: ReturnType<typeof getServiceSupabase>;
   jobId: string;
@@ -69,12 +75,12 @@ async function runLocalPdfJob(params: {
     }
 
     const pyData = await pyRes.json();
-    const cards: any[] = Array.isArray(pyData.cards) ? pyData.cards : [];
+    const cards: StructuredCardPayload[] = Array.isArray(pyData.cards) ? pyData.cards : [];
     const report = pyData.report || {};
 
     if (documentoId && cards.length > 0) {
       const joinedContent = cards
-        .map((c: any) => `## ${c.titulo}\n${c.contenido}`)
+        .map((c: StructuredCardPayload) => `## ${c.titulo || "Tema"}\n${c.contenido || ""}`)
         .join("\n\n");
       await serviceDb
         .schema("nutricionista")
@@ -91,7 +97,7 @@ async function runLocalPdfJob(params: {
         .delete()
         .eq("documento_id", documentoId);
 
-      const rows = cards.map((c: any, idx: number) => ({
+      const rows = cards.map((c: StructuredCardPayload, idx: number) => ({
         documento_id: documentoId,
         titulo: c.titulo || `Tema #${idx + 1}`,
         contenido: c.contenido || "",
