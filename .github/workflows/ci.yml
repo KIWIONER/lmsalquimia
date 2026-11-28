@@ -48,6 +48,10 @@ jobs:
         env:
           PYTHONPATH: cerebro-py
         run: python -m evals.run_evals --mode deterministic
+      - name: Run RAG Semantic Evals Gate
+        env:
+          PYTHONPATH: cerebro-py
+        run: python -m evals.rag_evals --mode deterministic
 
   e2e-playwright:
     name: E2E Playwright Critical Flows
