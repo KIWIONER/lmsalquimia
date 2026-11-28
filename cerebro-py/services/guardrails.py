@@ -7,7 +7,7 @@ from typing import Tuple, List, Set, Dict, Any
 
 # Patrón regex para capturar cifras asociadas a unidades nutricionales, clínicas y científicas
 NUMERICAL_DOSAGE_PATTERN = re.compile(
-    r"(\b\d+(?:[\.,]\d+)?)\s*(°\s*[cf]|mg|µg|ug|mcg|g|kg|kcal|cal|ml|l|%|mmol/l|mol/l|mmol|mol|mmhg|pa|ui)\b",
+    r"(\b\d+(?:[\.,]\d+)?)\s*(°\s*[cf]\b|mmol/l\b|mol/l\b|mg\b|µg\b|ug\b|mcg\b|g\b|kg\b|kcal\b|cal\b|ml\b|l\b|%|mmol\b|mol\b|mmhg\b|pa\b|ui\b)",
     re.IGNORECASE,
 )
 

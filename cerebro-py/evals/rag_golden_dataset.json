@@ -1,0 +1,117 @@
+[
+  {
+    "case_id": "rag-ud4-01",
+    "unit": "UD4",
+    "query": "¿Qué temperaturas y tiempos se usan en la pasteurización HTST para leche y zumos?",
+    "retrieved_contexts": [
+      "La pasteurización es un tratamiento térmico a baja temperatura (<100 °C) con el objetivo de destruir microorganismos patógenos y reducir la carga microbiana total en un 95-99%.",
+      "Alta temperatura, corto tiempo (HTST; high temperature, short time): Para la leche: 72 °C durante 15 segundos. Es el método más común. Para los zumos: 77-92 °C durante 15-60 segundos."
+    ],
+    "expected_facts": ["72 °C", "15 segundos", "77-92 °C", "15-60 segundos", "95-99%"],
+    "candidate_answer": "En la pasteurización HTST se aplican 72 °C durante 15 segundos para la leche y 77-92 °C durante 15-60 segundos para los zumos, reduciendo la carga microbiana en un 95-99%.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-ud4-02",
+    "unit": "UD4",
+    "query": "¿Cuál es la diferencia entre fecha de caducidad y fecha de duración mínima?",
+    "retrieved_contexts": [
+      "Fecha de caducidad: indica el momento hasta el cual el alimento puede consumirse de forma segura. Rebasada esta fecha no debería ingerirse.",
+      "Fecha de duración mínima: indica la fecha hasta la que el alimento conserva sus propiedades específicas cuando se almacena correctamente. En la etiqueta aparece consumir preferentemente antes del."
+    ],
+    "expected_facts": ["fecha de caducidad", "segura", "duración mínima", "consumir preferentemente antes del"],
+    "candidate_answer": "La fecha de caducidad marca el límite de consumo seguro del alimento, mientras que la fecha de duración mínima (consumir preferentemente antes del) indica hasta cuándo conserva sus propiedades específicas si se almacena correctamente.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-ud4-03",
+    "unit": "UD4",
+    "query": "¿Qué productos no perecederos están exentos de fecha de caducidad o consumo preferente?",
+    "retrieved_contexts": [
+      "Existen productos clasificados como no perecederos que no llevan ni fecha de caducidad ni fecha de consumo preferente, como las bebidas alcohólicas con una graduación de un 10% o más en volumen de alcohol, vinagre, sal, azúcar y chicles."
+    ],
+    "expected_facts": ["10%", "vinagre", "sal", "azúcar", "chicles"],
+    "candidate_answer": "Están exentos los productos no perecederos como bebidas alcohólicas con un 10% o más de alcohol en volumen, vinagre, sal, azúcar y chicles.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-ud5-01",
+    "unit": "UD5",
+    "query": "¿Qué es el sistema APPCC y qué documentación exige su Principio 7?",
+    "retrieved_contexts": [
+      "El Análisis de Peligros y Puntos Críticos de Control (APPCC) es un sistema preventivo para garantizar la seguridad alimentaria mediante 7 principios.",
+      "El Principio 7 consiste en el establecimiento de un sistema de documentación y registro eficaz de todos los procedimientos y registros apropiados para estos principios y su aplicación."
+    ],
+    "expected_facts": ["APPCC", "7 principios", "Principio 7", "documentación", "registro"],
+    "candidate_answer": "El sistema APPCC es un enfoque preventivo basado en 7 principios; el Principio 7 exige establecer un sistema eficaz de documentación y registro de procedimientos.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-ud6-01",
+    "unit": "UD6",
+    "query": "¿Cuáles son los porcentajes estándar de grasa tras la estandarización de la leche?",
+    "retrieved_contexts": [
+      "Estandarización o normalización: consiste en el ajuste del contenido de grasa de la leche adicionando nata o leche desnatada. Los valores estándar son: Leche entera: 3,7% grasa; Leche semidesnatada: 1,5-1,8% grasa; Leche desnatada: < 1% grasa."
+    ],
+    "expected_facts": ["3,7%", "1,5-1,8%", "1%", "nata", "leche desnatada"],
+    "candidate_answer": "Los valores estándar tras la normalización son 3,7% de grasa para la leche entera, 1,5-1,8% para la semidesnatada y menos del 1% para la desnatada.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-ud6-02",
+    "unit": "UD6",
+    "query": "¿A qué temperatura y plazo máximo debe conservarse la leche tras la pasteurización?",
+    "retrieved_contexts": [
+      "Tras la pasteurización la leche debe refrigerarse inmediatamente a menos de 4 °C, y debe llegar al consumidor en un plazo máximo de 36 horas.",
+      "Prueba de la fosfatasa alcalina: comprueba si existe fosfatasa alcalina en una muestra de leche, lo que indicaría que el proceso térmico no ha sido correcto."
+    ],
+    "expected_facts": ["4 °C", "36 horas", "fosfatasa alcalina"],
+    "candidate_answer": "Después de la pasteurización, la leche debe refrigerarse a menos de 4 °C y llegar al consumidor en un máximo de 36 horas; la prueba de la fosfatasa alcalina verifica que el tratamiento térmico fue correcto.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-ud6-03",
+    "unit": "UD6",
+    "query": "¿Qué temperaturas se usan en la esterilización UHT y la uperización?",
+    "retrieved_contexts": [
+      "Esterilización UHT (Ultra High Temperature): se realiza a 135-150 °C durante 4-15 segundos. También se emplea la uperización a 150 °C durante 1-3 segundos."
+    ],
+    "expected_facts": ["135-150 °C", "4-15 segundos", "150 °C", "1-3 segundos"],
+    "candidate_answer": "La esterilización UHT se aplica a 135-150 °C durante 4-15 segundos, mientras que la uperización emplea 150 °C durante 1-3 segundos.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-ud6-04",
+    "unit": "UD6",
+    "query": "¿Qué temperaturas de refrigeración y congelación se aplican a la carne en matadero?",
+    "retrieved_contexts": [
+      "Refrigeración del animal muerto a 14-19 °C para evitar un descenso brusco del pH y la desnaturalización de proteínas musculares.",
+      "Refrigeración posterior a 0-4 °C para retrasar el crecimiento microbiano, y congelación a -40 °C y -18 °C para conservación prolongada."
+    ],
+    "expected_facts": ["14-19 °C", "pH", "0-4 °C", "-40 °C", "-18 °C"],
+    "candidate_answer": "Se aplica una refrigeración inicial a 14-19 °C para evitar un descenso brusco del pH, luego conservación a 0-4 °C y congelación a -40 °C y -18 °C para almacenamiento prolongado.",
+    "expected_faithful": true
+  },
+  {
+    "case_id": "rag-adv-01",
+    "unit": "UD4",
+    "query": "¿Qué temperatura se usa en la pasteurización HTST de la leche?",
+    "retrieved_contexts": [
+      "Alta temperatura, corto tiempo (HTST): Para la leche se aplican 72 °C durante 15 segundos."
+    ],
+    "expected_facts": ["72 °C", "15 segundos"],
+    "candidate_answer": "Para la pasteurización HTST de la leche se aplican 140 °C durante 45 minutos.",
+    "expected_faithful": false
+  },
+  {
+    "case_id": "rag-adv-02",
+    "unit": "UD6",
+    "query": "¿Cuál es el porcentaje de grasa de la leche entera estándar?",
+    "retrieved_contexts": [
+      "Los valores estándar son: Leche entera: 3,7% grasa; Leche semidesnatada: 1,5-1,8% grasa."
+    ],
+    "expected_facts": ["3,7%", "1,5-1,8%"],
+    "candidate_answer": "La leche entera estándar contiene un 12,5% de grasa saturada añadida.",
+    "expected_faithful": false
+  }
+]

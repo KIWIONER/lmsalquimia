@@ -1,36 +1,40 @@
 # 🧠 CONTEXT.md — Documento Maestro y Estrella Polar de Alquimia LMS
 
 > **Plataforma EdTech Interactiva de Ciencias de la Salud y Ciencias Exactas (Medicina, Nutrición, Química, Bioquímica y Física) impulsada por IA Observable, RAG Híbrido (Qdrant), Micro-Learning y Arquitectura Híbrida (Next.js + Supabase + AWS)**
-> *Fuente única de verdad para desarrolladores, revisores técnicos y agentes IA.*
+> _Fuente única de verdad para desarrolladores, revisores técnicos y agentes IA._
 
 ---
 
 ## 1. Identidad, Propósito y Visión del Producto
 
 ### ¿Qué es Alquimia LMS?
+
 **Alquimia LMS** es una plataforma educativa interactiva diseñada para el estudio riguroso de **ciencias aplicadas y ciencias de la salud** —abarcando **Medicina, Nutrición y Dietética (vertical piloto actual), Química, Bioquímica, Física** y disciplinas científicas afines.
 
 A diferencia de un chat genérico con IA sobre apuntes, el dominio científico exige **cero tolerancia a alucinaciones numéricas, de unidades o de dosificación** (`mg`, `µg`, `kcal`, `mol/L`, `m/s²`, constantes físicas/clínicas) y una pedagogía activa orientada a la retención real:
+
 - **Micro-learning por tarjetas interactivas** con subrayado, resúmenes estructurados y sincronización con libros/PDFs de referencia.
 - **Tutoría IA proactiva ("Profesor Alquimia")** anclada a evidencia bibliográfica (`[[REFS:...]]`) y disparada ante bloqueos reales del alumno (p. ej. trigger SQL tras 3 fallos consecutivos).
 - **Evaluación adaptativa** con validación de esquemas estrictos y guardrails de integridad numérica/científica.
 
 ### Doble Objetivo del Proyecto
+
 1. **Objetivo de Producto (EdTech Científico):** Construir una plataforma fiable, rápida y afinada para el estudio de ramas científicas y médicas, capaz de ingerir bibliografía pesada (PDFs técnicos), estructurarla en micro-lecciones y evaluar con precisión verificable.
 2. **Objetivo de Ingeniería (Arquitectura Nivel Producción / Mid 45k€):** Evolucionar el sistema desde un prototipo síncrono hacia una **plataforma distribuida, asíncrona, observable, segura y testeada** con infraestructura declarada como código (Terraform en AWS), control estricto de costes de IA y calidad automatizada en CI/CD.
 
 ---
 
-## 2. Arquitectura: Estado Actual (*As-Is*) vs. Estado Objetivo (*To-Be*)
+## 2. Arquitectura: Estado Actual (_As-Is_) vs. Estado Objetivo (_To-Be_)
 
-### Estado Actual (*As-Is*)
+### Estado Actual (_As-Is_)
+
 - **Frontend & BFF:** Next.js 16 (App Router) + React 19 + TypeScript estricto + Tailwind CSS v4 + Zustand / Nano Stores + TipTap (editor docente) + PDF.js (visor sincronizado).
 - **Datos, Auth y Realtime:** Supabase (Auth SSR con `@supabase/ssr` y middleware, PostgreSQL con esquemas `public` y `nutricionista`, triggers PL/pgSQL y Realtime).
 - **Motor IA / ETL (`cerebro-py`):** Microservicio Python (FastAPI + Pydantic v2 + PyMuPDF + `pytest`) con extracción de PDFs, generación de quizzes, flujo ETL (`flows/etl_ingest_flow.py`) y guardrail de integridad numérica clínica (`services/guardrails.py`).
 - **Limitación actual:** Las llamadas desde `src/app/api/cerebro/route.ts` hacia `cerebro-py` son **síncronas por HTTP** (timeout 8s) y dependen aún de un webhook legacy en **n8n** como fallback (timeout 15s).
 - **Estado de `n8n`:** **DEPRECADO (en fase de retirada).** Se mantiene únicamente como fallback transitorio en Fase 0 y será eliminado por completo al completarse las Fases 1 y 2 en favor de código propio versionado, observable y testeable (`cerebro-py` + AWS SQS/Lambda + LLM Router).
 
-### Arquitectura Objetivo (*To-Be* — Fin de Fase 4)
+### Arquitectura Objetivo (_To-Be_ — Fin de Fase 4)
 
 ```mermaid
 flowchart TB
@@ -132,13 +136,13 @@ lmsalquimia/
 
 ## 5. Hoja de Ruta Estratégica (Fases 0–4)
 
-| Fase | Enfoque Principal | Estado | Documentación |
-| :--- | :--- | :--- | :--- |
-| **Fase 0** | Saneamiento legacy (Astro), Baseline cuantitativo, `.env.example`, CI Quick Win y `README.md` v1 | **Completada** | [Estrategia](docs/estrategia/fase-0-saneamiento-baseline/fase-0-saneamiento-baseline.md) · [Implementation Plan](docs/estrategia/fase-0-saneamiento-baseline/implementation-plan.md) · [Baseline](docs/estrategia/fase-0-saneamiento-baseline/baseline-metrics.md) |
-| **Fase 1** | Backend Asíncrono en AWS (S3 Presigned + SQS/DLQ + Lambda Python) + Terraform + IAM mínimo privilegio | **Implementada (local)** | [Estrategia](docs/estrategia/fase-1-backend-asincrono-aws-terraform/fase-1-backend-asincrono-aws-terraform.md) · [Implementation Plan](docs/estrategia/fase-1-backend-asincrono-aws-terraform/fase-1-implementation-plan.md) |
-| **Fase 2** | Ingeniería de IA Observable y Evaluable (Zod/Pydantic + Fallback Multi-LLM + **Qdrant RAG Híbrido** + Redis + Langfuse + 28 Evals + retirada definitiva de `n8n`) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-2-ingenieria-ia-observable-evaluable/fase-2-ingenieria-ia-observable-evaluable.md) · [Implementation Plan](docs/estrategia/fase-2-ingenieria-ia-observable-evaluable/fase-2-implementation-plan.md) |
-| **Fase 3** | Seguridad, Datos y Calidad de Producción (RLS auditado + `supabase/migrations/` + Vitest/Pytest/Playwright en CI + `/api/health` + logs JSON) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-3-seguridad-datos-calidad-produccion/fase-3-seguridad-datos-calidad-produccion.md) · [Implementation Plan](docs/estrategia/fase-3-seguridad-datos-calidad-produccion/fase-3-implementation-plan.md) |
-| **Fase 4** | Presentación de Ingeniería CTO-Ready (`README.md` definitivo, ADRs de Trade-offs y métricas reales *Antes vs. Después*) | **Implementada (local)** | [Estrategia](docs/estrategia/fase-4-presentacion-ingenieria-cto/fase-4-presentacion-ingenieria-cto.md) · [Implementation Plan](docs/estrategia/fase-4-presentacion-ingenieria-cto/fase-4-implementation-plan.md) · [ADRs](docs/architecture/decisions.md) |
+| Fase       | Enfoque Principal                                                                                                                                              | Estado                              | Documentación                                                                                                                                                                                                                                                      |
+| :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fase 0** | Saneamiento legacy (Astro), Baseline cuantitativo, `.env.example`, CI Quick Win y `README.md` v1                                                               | **Completada**                      | [Estrategia](docs/estrategia/fase-0-saneamiento-baseline/fase-0-saneamiento-baseline.md) · [Implementation Plan](docs/estrategia/fase-0-saneamiento-baseline/implementation-plan.md) · [Baseline](docs/estrategia/fase-0-saneamiento-baseline/baseline-metrics.md) |
+| **Fase 1** | Backend Asíncrono en AWS (S3 Presigned + SQS/DLQ + Lambda Python) + Terraform + IAM mínimo privilegio                                                          | **Desplegada en AWS (`eu-west-1`)** | [Benchmark AWS](auditorias/2026-11-28-benchmark-aws-cloud.md) · [Implementation Plan](docs/estrategia/fase-1-backend-asincrono-aws-terraform/fase-1-implementation-plan.md)                                                                                        |
+| **Fase 2** | Ingeniería de IA Observable y Evaluable (Zod/Pydantic + Fallback Multi-LLM + **Qdrant RAG Híbrido** + Pipeline 4 Capas + Guardrails + 28 Evals + 10 Evals RAG) | **Completada (`45/45` Pytest)**     | [Pipeline Salud](docs/plans/pipeline-ingesta-salud-fiable-implementation-plan.md) · [Evals RAG](auditorias/2026-11-28-rag-semantic-evals.md)                                                                                                                       |
+| **Fase 3** | Seguridad, Datos y Calidad de Producción (RLS 100% + RBAC + Modo Demo + `/api/health` `200 OK`)                                                                | **Completada y auditada (16/16)**   | [Auditoría Seguridad](auditorias/2026-11-28-auditoria-seguridad-y-funcionamiento.md) · [Implementation Plan](docs/estrategia/fase-3-seguridad-datos-calidad-produccion/fase-3-implementation-plan.md)                                                              |
+| **Fase 4** | Presentación de Ingeniería CTO-Ready (`README.md` definitivo, ADRs de Trade-offs y evidencias cloud)                                                           | **Completada**                      | [Estrategia](docs/estrategia/fase-4-presentacion-ingenieria-cto/fase-4-presentacion-ingenieria-cto.md) · [ADRs](docs/architecture/decisions.md)                                                                                                                    |
 
 ---
 
@@ -146,4 +150,4 @@ lmsalquimia/
 
 - **Metodología de desarrollo:** Todo Implementation Plan y ejecución de código sigue la skill [`skills/code-refinement-suite/SKILL.md`](skills/code-refinement-suite/SKILL.md) (clasificación adaptativa de complejidad, Plan con Roadmap de checkboxes y verificación fáctica antes de cerrar).
 - **Control de versiones (Regla mandatoria en `AGENTS.md`):** **NUNCA ejecutar `git push` automáticamente.** Siempre presentar resumen de cambios y resultados de pruebas y solicitar confirmación explícita del usuario.
-- **Mantenimiento de este documento:** Al finalizar cada fase, actualizar la tabla de la Sección 5 y sincronizar el estado *As-Is* para que `CONTEXT.md` nunca vuelva a quedarse desfasado.
+- **Mantenimiento de este documento:** Al finalizar cada fase, actualizar la tabla de la Sección 5 y sincronizar el estado _As-Is_ para que `CONTEXT.md` nunca vuelva a quedarse desfasado.

@@ -131,8 +131,8 @@ resource "aws_lambda_function" "alquimia_worker" {
   package_type  = "Image"
   image_uri     = local.lambda_uri
 
-  timeout     = 60
-  memory_size = 512
+  timeout     = 120
+  memory_size = 1024
 
   environment {
     variables = {
